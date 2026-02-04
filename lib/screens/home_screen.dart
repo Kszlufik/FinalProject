@@ -4,6 +4,8 @@ import 'dart:convert';
 import '../widgets/game_card.dart';
 
 class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
@@ -19,11 +21,10 @@ class _HomeScreenState extends State<HomeScreen> {
     fetchGames();
   }
 
-  // Fetch games from RAWG API
-  fetchGames() async {
+  Future<void> fetchGames() async {
     const apiKey = '7ebe36a5b43249e995faab2bf81262bf';
     final url =
-        'https://api.rawg.io/api/games?key=$apiKey&ordering=-rating&page_size=20';
+        'https://api.rawg.io/api/games?key=$apiKey&ordering=-rating&page_size=30';
 
     try {
       final response = await http.get(Uri.parse(url));
@@ -37,7 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
       } else {
         setState(() {
           loading = false;
-          errorMessage = 'Failed to fetch games: ${response.statusCode}';
+          errorMessage = 'Failed to fetch games (${response.statusCode})';
         });
       }
     } catch (e) {
@@ -50,32 +51,33 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Determine columns based on screen width (responsive)
-    int calculateColumns(double width) {
-      if (width > 1000) return 4;
-      if (width > 600) return 3;
-      return 2;
-    }
-
     return Scaffold(
-      appBar: AppBar(title: const Text('PlayPal')),
+      appBar: AppBar(
+        title: const Text('PlayPal'),
+      ),
       body: loading
           ? const Center(child: CircularProgressIndicator())
           : errorMessage != null
               ? Center(child: Text(errorMessage!))
-              : LayoutBuilder(
-                  builder: (context, constraints) {
-                    final columns = calculateColumns(constraints.maxWidth);
-                    return Padding(
-                      padding: const EdgeInsets.all(8.0),
+              : Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      maxWidth: 1200, 
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 24,
+                      ),
                       child: GridView.builder(
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: columns,
-                          crossAxisSpacing: 8,
-                          mainAxisSpacing: 8,
-                          childAspectRatio: 0.65,
-                        ),
                         itemCount: games.length,
+                        gridDelegate:
+                            const SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: 320, 
+                          mainAxisSpacing: 24,
+                          crossAxisSpacing: 24,
+                          childAspectRatio: 0.68,
+                        ),
                         itemBuilder: (context, index) {
                           final game = games[index];
                           return GameCard(
@@ -86,8 +88,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           );
                         },
                       ),
-                    );
-                  },
+                    ),
+                  ),
                 ),
     );
   }
