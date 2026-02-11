@@ -1,45 +1,32 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
+
 import '../widgets/game_card.dart';
+import '../widgets/filters_bar.dart';
 import 'game_details_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  _HomeScreenState createState() => _HomeScreenState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
   List games = [];
-  bool loading = true;
-  String? errorMessage;
-  final TextEditingController _searchController = TextEditingController();
+  bool isLoading = false;
 
   int currentPage = 1;
-  String sortBy = 'rating';
-  bool ascending = false;
-  String? selectedGenre;
+  int totalPages = 1;
+  final int pageSize = 40;
 
-  final Map<String, String> genres = {
-    'Action': '4',
-    'Adventure': '3',
-    'RPG': '5',
-    'Shooter': '2',
-    'Strategy': '10',
-    'Sports': '15',
-    'Racing': '1',
-    'Fighting': '6',
-    'Platformer': '83',
-    'Horror': '11',
-    'Casual': '40',
-    'Indie': '51',
-    'Educational': '13',
-    'Simulation': '14',
-    'Puzzle': '7',
-    'Massively Multiplayer': '59',
-  };
+  String ordering = '-rating';
+  String genre = '';
+
+  Set<int> favoriteGameIds = {};
+
+  final String apiKey = '7ebe36a5b43249e995faab2bf81262bf';
 
   @override
   void initState() {
@@ -47,235 +34,207 @@ class _HomeScreenState extends State<HomeScreen> {
     fetchGames();
   }
 
-  Future<void> fetchGames({int page = 1, String query = ''}) async {
-    const apiKey = '7ebe36a5b43249e995faab2bf81262bf';
-    String ordering = ascending ? sortBy : '-$sortBy';
+  Future<void> fetchGames() async {
+    setState(() => isLoading = true);
 
     String url =
-        'https://api.rawg.io/api/games?key=$apiKey&page_size=40&page=$page&ordering=$ordering';
+        'https://api.rawg.io/api/games?key=$apiKey&page_size=$pageSize&page=$currentPage&ordering=$ordering';
 
-    if (query.isNotEmpty) url += '&search=$query';
-    if (selectedGenre != null) url += '&genres=$selectedGenre';
-
-    setState(() {
-      loading = true;
-      errorMessage = null;
-    });
+    if (genre.isNotEmpty) {
+      url += '&genres=$genre';
+    }
 
     try {
       final response = await http.get(Uri.parse(url));
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final data = json.decode(response.body);
+
         setState(() {
           games = data['results'];
-          loading = false;
+          totalPages = (data['count'] / pageSize).ceil();
         });
       } else {
-        setState(() {
-          loading = false;
-          errorMessage = 'Failed to fetch games (${response.statusCode})';
-        });
+        debugPrint('API Error: ${response.statusCode}');
       }
     } catch (e) {
-      setState(() {
-        loading = false;
-        errorMessage = 'Error fetching games: $e';
-      });
+      debugPrint('Error fetching games: $e');
     }
+
+    setState(() => isLoading = false);
+  }
+
+  void handleSortChange(String? value) {
+    if (value == null) return;
+
+    setState(() {
+      ordering = value;
+      currentPage = 1;
+    });
+
+    fetchGames();
+  }
+
+  void handleGenreChange(String? value) {
+    if (value == null) return;
+
+    setState(() {
+      genre = value;
+      currentPage = 1;
+    });
+
+    fetchGames();
   }
 
   void clearFilters() {
-    _searchController.clear();
-    selectedGenre = null;
-    sortBy = 'rating';
-    ascending = false;
-    currentPage = 1;
-    fetchGames(page: currentPage);
+    setState(() {
+      ordering = '-rating';
+      genre = '';
+      currentPage = 1;
+    });
+
+    fetchGames();
+  }
+
+  void goToPage(int page) {
+    setState(() {
+      currentPage = page;
+    });
+
+    fetchGames();
+  }
+
+  void toggleFavorite(int id) {
+    setState(() {
+      if (favoriteGameIds.contains(id)) {
+        favoriteGameIds.remove(id);
+      } else {
+        favoriteGameIds.add(id);
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('PlayPal')),
-      body: loading
-          ? const Center(child: CircularProgressIndicator())
-          : errorMessage != null
-              ? Center(child: Text(errorMessage!))
-              : Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1200),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 24, vertical: 24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // SEARCH BAR
-                          TextField(
-                            controller: _searchController,
-                            decoration: InputDecoration(
-                              hintText: 'Search games...',
-                              prefixIcon: const Icon(Icons.search),
-                              filled: true,
-                              fillColor: Colors.grey.shade100,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
-                              ),
-                            ),
-                            onSubmitted: (value) {
-                              currentPage = 1;
-                              fetchGames(
-                                  page: currentPage, query: value.trim());
-                            },
+      appBar: AppBar(
+        title: const Text('PlayPal'),
+      ),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1200),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            child: Column(
+              children: [
+                // Fltering
+                FiltersBar(
+                  sortBy: ordering,
+                  genre: genre,
+                  onSortChange: handleSortChange,
+                  onGenreChange: handleGenreChange,
+                  onClearFilters: clearFilters,
+                ),
+
+                const SizedBox(height: 16),
+
+                // smooth loading
+                if (isLoading)
+                  const Expanded(
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                else
+                  Expanded(
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        int crossAxisCount =
+                            (constraints.maxWidth / 250).floor();
+
+                        if (crossAxisCount < 2) crossAxisCount = 2;
+
+                        return GridView.builder(
+                          itemCount: games.length,
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: crossAxisCount,
+                            childAspectRatio: 0.68,
+                            crossAxisSpacing: 20,
+                            mainAxisSpacing: 20,
                           ),
+                          itemBuilder: (context, index) {
+                            final game = games[index];
 
-                          const SizedBox(height: 16),
-
-                          // SORT & FILTER CONTROLS
-                          Row(
-                            children: [
-                              DropdownButton<String>(
-                                value: sortBy,
-                                items: const [
-                                  DropdownMenuItem(
-                                      value: 'rating', child: Text('Rating')),
-                                  DropdownMenuItem(
-                                      value: 'released',
-                                      child: Text('Release Date')),
-                                ],
-                                onChanged: (value) {
-                                  if (value != null) {
-                                    setState(() {
-                                      sortBy = value;
-                                    });
-                                    fetchGames(
-                                        page: currentPage,
-                                        query: _searchController.text);
-                                  }
-                                },
-                              ),
-                              const SizedBox(width: 16),
-                              IconButton(
-                                icon: Icon(ascending
-                                    ? Icons.arrow_upward
-                                    : Icons.arrow_downward),
-                                onPressed: () {
-                                  setState(() {
-                                    ascending = !ascending;
-                                  });
-                                  fetchGames(
-                                      page: currentPage,
-                                      query: _searchController.text);
-                                },
-                              ),
-                              const SizedBox(width: 16),
-                              DropdownButton<String>(
-                                hint: const Text('Genre'),
-                                value: selectedGenre,
-                                items: genres.entries
-                                    .map((e) => DropdownMenuItem(
-                                        value: e.value, child: Text(e.key)))
-                                    .toList(),
-                                onChanged: (value) {
-                                  setState(() {
-                                    selectedGenre = value;
-                                  });
-                                  fetchGames(
-                                      page: currentPage,
-                                      query: _searchController.text);
-                                },
-                              ),
-                              const SizedBox(width: 16),
-                              ElevatedButton(
-                                onPressed: clearFilters,
-                                child: const Text('Clear'),
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          // GAME GRID
-                          Expanded(
-                            child: GridView.builder(
-                              itemCount: games.length,
-                              gridDelegate:
-                                  const SliverGridDelegateWithMaxCrossAxisExtent(
-                                maxCrossAxisExtent: 320,
-                                mainAxisSpacing: 24,
-                                crossAxisSpacing: 24,
-                                childAspectRatio: 0.68,
-                              ),
-                              itemBuilder: (context, index) {
-                                final game = games[index];
-                                return GestureDetector(
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => GameDetailsScreen(
-                                          name: game['name'] ?? 'Unknown',
-                                          imageUrl:
-                                              game['background_image'] ?? '',
-                                          rating: (game['rating'] ?? 0)
+                            return GameCard(
+                              name: game['name'] ?? '',
+                              imageUrl:
+                                  game['background_image'] ?? '',
+                              rating:
+                                  (game['rating'] ?? 0).toDouble(),
+                              released:
+                                  game['released'] ?? 'Unknown',
+                              isFavorite:
+                                  favoriteGameIds.contains(game['id']),
+                              onFavoriteToggle: () =>
+                                  toggleFavorite(game['id']),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        GameDetailsScreen(
+                                      name: game['name'] ?? '',
+                                      imageUrl: game[
+                                              'background_image'] ??
+                                          '',
+                                      rating:
+                                          (game['rating'] ?? 0)
                                               .toDouble(),
-                                          released: game['released'] ?? 'Unknown',
-                                          description:
-                                              game['description_raw'] ??
-                                                  'No description available.',
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                  child: GameCard(
-                                    name: game['name'] ?? 'Unknown',
-                                    imageUrl: game['background_image'] ?? '',
-                                    rating: (game['rating'] ?? 0).toDouble(),
-                                    released: game['released'] ?? 'Unknown',
+                                      released:
+                                          game['released'] ??
+                                              'Unknown',
+                                      description:
+                                          game['slug'] ??
+                                              'No description available',
+                                    ),
                                   ),
                                 );
                               },
-                            ),
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          // PAGINATION
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              ElevatedButton(
-                                onPressed: currentPage > 1
-                                    ? () {
-                                        setState(() => currentPage--);
-                                        fetchGames(
-                                            page: currentPage,
-                                            query: _searchController.text);
-                                      }
-                                    : null,
-                                child: const Text('Previous'),
-                              ),
-                              const SizedBox(width: 16),
-                              ElevatedButton(
-                                onPressed: games.length == 40
-                                    ? () {
-                                        setState(() => currentPage++);
-                                        fetchGames(
-                                            page: currentPage,
-                                            query: _searchController.text);
-                                      }
-                                    : null,
-                                child: const Text('Next'),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                            );
+                          },
+                        );
+                      },
                     ),
                   ),
-                ),
+
+                const SizedBox(height: 16),
+
+                // Ppagination
+                if (!isLoading)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ElevatedButton(
+                        onPressed: currentPage > 1
+                            ? () => goToPage(currentPage - 1)
+                            : null,
+                        child: const Text('Previous'),
+                      ),
+                      const SizedBox(width: 20),
+                      Text('Page $currentPage of $totalPages'),
+                      const SizedBox(width: 20),
+                      ElevatedButton(
+                        onPressed: currentPage < totalPages
+                            ? () => goToPage(currentPage + 1)
+                            : null,
+                        child: const Text('Next'),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -31,7 +31,7 @@ class GameDetailsScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // GAME IMAGE
+                  // image here
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                     child: Image.network(
@@ -41,14 +41,14 @@ class GameDetailsScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
 
-                  // NAME
+                  // name of game
                   Text(
                     name,
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 8),
 
-                  // RATING & RELEASED
+                  // ratings + releaaee
                   Row(
                     children: [
                       Icon(Icons.star, color: Colors.amber),
@@ -60,7 +60,7 @@ class GameDetailsScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
 
-                  // DESCRIPTION
+                  // desc
                   Text(
                     description,
                     style: Theme.of(context).textTheme.bodyMedium,
