@@ -41,7 +41,7 @@ class GameDetailsScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
 
-                  // name of game
+                  // name of game the game fielfs
                   Text(
                     name,
                     style: Theme.of(context).textTheme.titleLarge,
