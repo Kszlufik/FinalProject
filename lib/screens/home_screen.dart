@@ -1,14 +1,16 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart'; // kIsWeb
-import 'package:firebase_auth_web/firebase_auth_web.dart';
 
-import '../widgets/game_card.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+// Widgets
 import '../widgets/filters_bar.dart';
-import 'game_details_screen.dart';
-import 'favorites_screen.dart';
+import '../widgets/search_bar.dart';
+// Screens
+import '../screens/game_details_screen.dart';
+import '../screens/favorites_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,270 +20,481 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  List games = [];
-  bool isLoading = false;
+  List<dynamic> games = [];
+  List<Map<String, dynamic>> recentlyViewed = [];
 
-  int currentPage = 1;
-  int totalPages = 1;
-  final int pageSize = 40;
-
-  String ordering = '-rating';
-  String genre = '';
+  bool isLoading = true;
+  bool isNextPageLoading = false;
 
   Set<int> favoriteGameIds = {};
 
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final String apiKey = '7ebe36a5b43249e995faab2bf81262bf';
+  int currentPage = 1;
+
+  // Filters & search
+  String sortBy = '-rating';
+  String genre = '';
+  String searchQuery = '';
+  final TextEditingController searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     fetchGames();
+    loadFavorites();
+    loadRecentlyViewed();
   }
 
-  Future<void> fetchGames() async {
-    setState(() => isLoading = true);
 
-    String url =
-        'https://api.rawg.io/api/games?key=$apiKey&page_size=$pageSize&page=$currentPage&ordering=$ordering';
-    if (genre.isNotEmpty) url += '&genres=$genre';
+  // FETCH GAMES LIST
+
+  Future<void> fetchGames({bool nextPage = false}) async {
+    if (nextPage) {
+      setState(() => isNextPageLoading = true);
+      currentPage += 1;
+    } else {
+      setState(() => isLoading = true);
+      currentPage = 1;
+      games.clear();
+    }
+
+    final queryParameters = {
+      'key': apiKey,
+      'page_size': '40',
+      'page': currentPage.toString(),
+      'ordering': sortBy,
+      if (genre.isNotEmpty) 'genres': genre,
+      if (searchQuery.isNotEmpty) 'search': searchQuery,
+    };
+
+    final uri = Uri.https('api.rawg.io', '/api/games', queryParameters);
 
     try {
-      final response = await http.get(Uri.parse(url));
-
+      final response = await http.get(uri);
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         setState(() {
-          games = data['results'];
-          totalPages = (data['count'] / pageSize).ceil();
+          games.addAll(data['results']);
+          isLoading = false;
+          isNextPageLoading = false;
         });
+      } else {
+        throw Exception('Failed to load games');
       }
     } catch (e) {
-      debugPrint('Error fetching games: $e');
+      print("Error fetching games: $e");
+      setState(() {
+        isLoading = false;
+        isNextPageLoading = false;
+      });
     }
-
-    if (mounted) setState(() => isLoading = false);
   }
 
-  //  web log off
-  Future<void> confirmLogout() async {
-    final shouldLogout = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Log Out"),
-        content: const Text("Are you sure you want to log out?"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancel"),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text("Log Out"),
-          ),
-        ],
-      ),
-    );
 
-    if (shouldLogout != true) return;
+  // FETCH FULL GAME DETAILS
+  Future<Map<String, dynamic>> fetchGameDetails(int id) async {
+    final url = 'https://api.rawg.io/api/games/$id?key=$apiKey';
+    final response = await http.get(Uri.parse(url));
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to fetch game details');
+    }
+  }
 
-    try {
-      if (kIsWeb) {
-        await FirebaseAuthWeb.instance.signOut();
-      } else {
-        await FirebaseAuth.instance.signOut();
+  // SAVE RECENTLY VIEWED
+  Future<void> saveRecentlyViewed(Map<String, dynamic> game) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final docRef = _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('recentlyViewed')
+        .doc(game['id'].toString());
+
+    await docRef.set({
+      'gameId': game['id'],
+      'name': game['name'],
+      'imageUrl': game['background_image'],
+      'rating': game['rating'],
+      'released': game['released'],
+      'viewedAt': FieldValue.serverTimestamp(),
+    });
+
+    final snapshot = await _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('recentlyViewed')
+        .orderBy('viewedAt', descending: true)
+        .get();
+
+    if (snapshot.docs.length > 10) {
+      for (int i = 10; i < snapshot.docs.length; i++) {
+        await snapshot.docs[i].reference.delete();
       }
-
-      if (!mounted) return;
-      Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
-    } catch (e, s) {
-      debugPrint('Logout error: $e');
-      debugPrint('$s');
     }
+
+    loadRecentlyViewed();
   }
 
-  void handleSortChange(String? value) {
-    if (value == null) return;
+  Future<void> loadRecentlyViewed() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final snapshot = await _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('recentlyViewed')
+        .orderBy('viewedAt', descending: true)
+        .limit(10)
+        .get();
+
     setState(() {
-      ordering = value;
-      currentPage = 1;
+      recentlyViewed = snapshot.docs.map((doc) => doc.data()).toList();
     });
-    fetchGames();
   }
 
-  void handleGenreChange(String? value) {
-    if (value == null) return;
-    setState(() {
-      genre = value;
-      currentPage = 1;
-    });
-    fetchGames();
+ 
+  // LOAD FAVORITES
+  
+  Future<void> loadFavorites() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final snapshot = await _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('favorites')
+        .get();
+
+    final ids = snapshot.docs.map((doc) => int.parse(doc.id)).toSet();
+    setState(() => favoriteGameIds = ids);
   }
 
-  void clearFilters() {
-    setState(() {
-      ordering = '-rating';
-      genre = '';
-      currentPage = 1;
-    });
-    fetchGames();
-  }
+ 
+  // TOGGLE FAVORITE (Optimistic UI)
+ 
+  Future<void> toggleFavorite(int id) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
 
-  void goToPage(int page) {
-    setState(() {
-      currentPage = page;
-    });
-    fetchGames();
-  }
+    final isFav = favoriteGameIds.contains(id);
 
-  void toggleFavorite(int id) {
     setState(() {
-      if (favoriteGameIds.contains(id)) {
+      if (isFav) {
         favoriteGameIds.remove(id);
       } else {
         favoriteGameIds.add(id);
       }
     });
+
+    final docRef = _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('favorites')
+        .doc(id.toString());
+
+    try {
+      if (isFav) {
+        await docRef.delete();
+      } else {
+        final game = games.firstWhere((g) => g['id'] == id);
+        await docRef.set({
+          'gameId': id,
+          'name': game['name'],
+          'imageUrl': game['background_image'],
+          'rating': game['rating'],
+          'released': game['released'],
+          'timestamp': FieldValue.serverTimestamp(),
+        });
+      }
+    } catch (e) {
+      print("Error updating favorite: $e");
+      setState(() {
+        if (isFav) {
+          favoriteGameIds.add(id);
+        } else {
+          favoriteGameIds.remove(id);
+        }
+      });
+    }
   }
 
+  
+  // NAVIGATE TO FAVORITES
+ 
+  void goToFavorites() {
+    final favoriteGames =
+        games.where((game) => favoriteGameIds.contains(game['id'])).toList();
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FavoritesScreen(
+          favoriteGames: favoriteGames,
+          favorites: favoriteGameIds,
+          onToggleFavorite: (int id) {
+            toggleFavorite(id);
+            setState(() {});
+          },
+        ),
+      ),
+    );
+  }
+
+ 
+  // BUILD
+  
   @override
   Widget build(BuildContext context) {
+    final isWideScreen = MediaQuery.of(context).size.width > 900;
+
+    Widget buildRecentlyViewed() {
+      if (recentlyViewed.isEmpty) return const SizedBox();
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(
+              'Recently Viewed',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ),
+          SizedBox(
+            height: 180,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: recentlyViewed.length,
+              itemBuilder: (context, index) {
+                final game = recentlyViewed[index];
+                return Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: SizedBox(
+                    width: 150,
+                    child: InkWell(
+                      onTap: () async {
+                        final details =
+                            await fetchGameDetails(game['gameId']);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => GameDetailsScreen(
+                              name: details['name'] ?? '',
+                              imageUrl: details['background_image'] ?? '',
+                              rating: (details['rating'] ?? 0).toDouble(),
+                              released: details['released'] ?? 'Unknown',
+                              description: details['description_raw'] ??
+                                  'No description available.',
+                            ),
+                          ),
+                        );
+                      },
+                      child: Column(
+                        children: [
+                          Expanded(
+                            child: Image.network(
+                              game['imageUrl'] ?? '',
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            game['name'] ?? '',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('PlayPal'),
         actions: [
           IconButton(
+            onPressed: goToFavorites,
+            icon: const Icon(Icons.favorite),
+          ),
+          IconButton(
+            onPressed: () => FirebaseAuth.instance.signOut(),
             icon: const Icon(Icons.logout),
-            tooltip: "Log Out",
-            onPressed: confirmLogout,
           ),
         ],
       ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1200),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      body: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (isWideScreen)
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 250),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  'Left Panel (space for categories/links)',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+            ),
+          Expanded(
             child: Column(
               children: [
-                Row(
-                  children: [
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        final favoriteGames = games
-                            .where((game) =>
-                                favoriteGameIds.contains(game['id']))
-                            .toList();
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => FavoritesScreen(
-                              favoriteGames: favoriteGames,
-                              favorites: favoriteGameIds,
-                              onToggleFavorite: toggleFavorite,
-                            ),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.favorite),
-                      label: const Text('Favorites'),
-                    ),
-                  ],
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8.0, vertical: 6),
+                  child: GameSearchBar(
+                    controller: searchController,
+                    onSubmitted: (value) {
+                      searchQuery = value;
+                      fetchGames();
+                    },
+                  ),
                 ),
-                const SizedBox(height: 16),
-
                 FiltersBar(
-                  sortBy: ordering,
+                  sortBy: sortBy,
                   genre: genre,
-                  onSortChange: handleSortChange,
-                  onGenreChange: handleGenreChange,
-                  onClearFilters: clearFilters,
+                  onSortChange: (value) {
+                    if (value == null) return;
+                    sortBy = value;
+                    fetchGames();
+                  },
+                  onGenreChange: (value) {
+                    if (value == null) return;
+                    genre = value;
+                    fetchGames();
+                  },
+                  onClearFilters: () {
+                    sortBy = '-rating';
+                    genre = '';
+                    searchController.clear();
+                    searchQuery = '';
+                    fetchGames();
+                  },
                 ),
-
-                const SizedBox(height: 16),
-
-                if (isLoading)
-                  const Expanded(
-                    child: Center(child: CircularProgressIndicator()),
-                  )
-                else
-                  Expanded(
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        int crossAxisCount =
-                            (constraints.maxWidth / 250).floor();
-                        if (crossAxisCount < 2) crossAxisCount = 2;
-
-                        return GridView.builder(
-                          itemCount: games.length,
+                buildRecentlyViewed(),
+                Expanded(
+                  child: isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : GridView.builder(
+                          padding: const EdgeInsets.all(10),
+                          itemCount: games.length + 1,
                           gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: crossAxisCount,
-                            childAspectRatio: 0.68,
-                            crossAxisSpacing: 20,
-                            mainAxisSpacing: 20,
+                              const SliverGridDelegateWithMaxCrossAxisExtent(
+                            maxCrossAxisExtent: 200,
+                            crossAxisSpacing: 10,
+                            mainAxisSpacing: 10,
+                            childAspectRatio: 0.6,
                           ),
                           itemBuilder: (context, index) {
+                            if (index == games.length) {
+                              return isNextPageLoading
+                                  ? const Center(
+                                      child: CircularProgressIndicator())
+                                  : Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: ElevatedButton(
+                                        onPressed: () =>
+                                            fetchGames(nextPage: true),
+                                        child: const Text("Next Page"),
+                                      ),
+                                    );
+                            }
+
                             final game = games[index];
-                            return GameCard(
-                              name: game['name'] ?? '',
-                              imageUrl: game['background_image'] ?? '',
-                              rating: (game['rating'] ?? 0).toDouble(),
-                              released: game['released'] ?? 'Unknown',
-                              isFavorite:
-                                  favoriteGameIds.contains(game['id']),
-                              onFavoriteToggle: () =>
-                                  toggleFavorite(game['id']),
-                              onTap: () {
+                            final id = game['id'];
+
+                            return InkWell(
+                              onTap: () async {
+                                // Fetch full description
+                                final details = await fetchGameDetails(id);
+
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) => GameDetailsScreen(
-                                      name: game['name'] ?? '',
-                                      imageUrl: game['background_image'] ?? '',
+                                    builder: (context) => GameDetailsScreen(
+                                      name: details['name'] ?? '',
+                                      imageUrl:
+                                          details['background_image'] ?? '',
                                       rating:
-                                          (game['rating'] ?? 0).toDouble(),
+                                          (details['rating'] ?? 0).toDouble(),
                                       released:
-                                          game['released'] ?? 'Unknown',
-                                      description: game['slug'] ??
-                                          'No description available',
+                                          details['released'] ?? 'Unknown',
+                                      description: details['description_raw'] ??
+                                          'No description available.',
                                     ),
                                   ),
                                 );
+
+                                saveRecentlyViewed(game);
                               },
+                              child: Card(
+                                elevation: 3,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      child: Image.network(
+                                        game['background_image'] ?? '',
+                                        fit: BoxFit.cover,
+                                        width: double.infinity,
+                                      ),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.all(6.0),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            game['name'] ?? '',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                                fontWeight: FontWeight.bold),
+                                          ),
+                                          Text(
+                                            "⭐ ${game['rating']}",
+                                            style: const TextStyle(fontSize: 12),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Align(
+                                      alignment: Alignment.centerRight,
+                                      child: IconButton(
+                                        icon: Icon(
+                                          favoriteGameIds.contains(id)
+                                              ? Icons.favorite
+                                              : Icons.favorite_border,
+                                          color: favoriteGameIds.contains(id)
+                                              ? Colors.red
+                                              : null,
+                                        ),
+                                        onPressed: () => toggleFavorite(id),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             );
                           },
-                        );
-                      },
-                    ),
-                  ),
-
-                const SizedBox(height: 16),
-
-                if (!isLoading)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ElevatedButton(
-                        onPressed: currentPage > 1
-                            ? () => goToPage(currentPage - 1)
-                            : null,
-                        child: const Text('Previous'),
-                      ),
-                      const SizedBox(width: 20),
-                      Text('Page $currentPage of $totalPages'),
-                      const SizedBox(width: 20),
-                      ElevatedButton(
-                        onPressed: currentPage < totalPages
-                            ? () => goToPage(currentPage + 1)
-                            : null,
-                        child: const Text('Next'),
-                      ),
-                    ],
-                  ),
+                        ),
+                ),
               ],
             ),
           ),
-        ),
+        ],
       ),
     );
   }
