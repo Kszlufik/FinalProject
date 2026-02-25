@@ -4,7 +4,7 @@ class Game {
   final String backgroundImage;
   final double rating;
   final String released;
-  final String description; // optional for details
+  final String description;
 
   Game({
     required this.id,

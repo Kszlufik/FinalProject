@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../services/rawg_service.dart';
-import '../services/user_service.dart';
+import 'package:playpal/services/user_service.dart';
 import '../widgets/game_grid.dart';
 import '../widgets/search_bar.dart';
 import '../widgets/filters_bar.dart';
@@ -39,13 +39,20 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    loadData();
+    fetchGames();
+    loadFavorites();
+    loadRecentlyViewed();
   }
 
-  Future<void> loadData() async {
-    await fetchGames();
-    await loadFavorites();
-    await loadRecentlyViewed();
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> loadFavorites() async {
+    final ids = await userService.loadFavorites();
+    if (mounted) setState(() => favoriteGameIds = ids);
   }
 
   Future<void> fetchGames({bool nextPage = false}) async {
@@ -73,11 +80,6 @@ class _HomeScreenState extends State<HomeScreen> {
       isLoading = false;
       isNextPageLoading = false;
     });
-  }
-
-  Future<void> loadFavorites() async {
-    final ids = await userService.loadFavorites();
-    setState(() => favoriteGameIds = ids);
   }
 
   Future<void> loadRecentlyViewed() async {
@@ -199,8 +201,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     onNextPage: () => fetchGames(nextPage: true),
                     onToggleFavorite: (id) async {
                       await userService.toggleFavorite(id, games, favoriteGameIds);
-                      if (!mounted) return;
-                      setState(() {});
+                      await loadFavorites();
                     },
                     onTapGame: _navigateToGameDetails,
                   ),
