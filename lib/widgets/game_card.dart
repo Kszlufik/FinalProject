@@ -1,4 +1,3 @@
-// lib/widgets/game_card.dart
 import 'package:flutter/material.dart';
 
 class GameCard extends StatelessWidget {
@@ -28,7 +27,6 @@ class GameCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          
           Expanded(
             child: Stack(
               children: [
@@ -46,9 +44,7 @@ class GameCard extends StatelessWidget {
                   right: 8,
                   child: IconButton(
                     icon: Icon(
-                      isFavorite
-                          ? Icons.favorite
-                          : Icons.favorite_border,
+                      isFavorite ? Icons.favorite : Icons.favorite_border,
                       color: Colors.red,
                     ),
                     onPressed: onFavoriteToggle,
@@ -57,36 +53,23 @@ class GameCard extends StatelessWidget {
               ],
             ),
           ),
-
           const SizedBox(height: 8),
-
-          // title
           Text(
             name,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
-
           const SizedBox(height: 4),
-
-          // rate
           Row(
             children: [
-              const Icon(Icons.star,
-                  color: Colors.amber, size: 16),
+              const Icon(Icons.star, color: Colors.amber, size: 16),
               const SizedBox(width: 4),
               Text(rating.toString()),
             ],
           ),
-
           const SizedBox(height: 4),
-
-          // release
-          Text(
-            'Released: $released',
-            style: const TextStyle(fontSize: 12),
-          ),
+          Text('Released: $released', style: const TextStyle(fontSize: 12)),
         ],
       ),
     );

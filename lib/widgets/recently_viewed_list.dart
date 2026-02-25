@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import '../models/game.dart';
 
 class RecentlyViewedList extends StatelessWidget {
-  final List<Map<String, dynamic>> recentlyViewed;
-  final Function(Map<String, dynamic>) onTapGame;
+  final List<Game> recentlyViewed;
+  final Function(Game) onTapGame;
 
   const RecentlyViewedList({
     super.key,
@@ -31,7 +32,7 @@ class RecentlyViewedList extends StatelessWidget {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(8),
                     child: Image.network(
-                      game['background_image'] ?? '',
+                      game.backgroundImage,
                       width: 100,
                       height: 70,
                       fit: BoxFit.cover,
@@ -43,7 +44,7 @@ class RecentlyViewedList extends StatelessWidget {
                   SizedBox(
                     width: 100,
                     child: Text(
-                      game['name'] ?? '',
+                      game.name,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
                       style: const TextStyle(fontSize: 12),

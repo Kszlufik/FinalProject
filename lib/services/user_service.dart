@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../screens/favorites_screen.dart';
+import '../models/game.dart';
 
 class UserService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -22,7 +23,7 @@ class UserService {
 
   /// Toggle favorite status
   Future<void> toggleFavorite(
-      int id, List<dynamic> games, Set<int> favoriteIds) async {
+      int id, List<Game> games, Set<int> favoriteIds) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
@@ -36,52 +37,48 @@ class UserService {
       await docRef.delete();
       favoriteIds.remove(id);
     } else {
-      // ✅ Guard against game not found to avoid StateError crash
-      final results = games.where((g) => g['id'] == id).toList();
+      // Find game object
+      final results = games.where((g) => g.id == id).toList();
       if (results.isEmpty) return;
       final game = results.first;
 
       await docRef.set({
         'gameId': id,
-        'name': game['name'],
-        'imageUrl': game['background_image'],
-        'rating': game['rating'],
-        'released': game['released'],
+        'name': game.name,
+        'background_image': game.backgroundImage,
+        'rating': game.rating,
+        'released': game.released,
+        'description_raw': game.description,
         'timestamp': FieldValue.serverTimestamp(),
       });
       favoriteIds.add(id);
     }
   }
 
-  /// Save recently viewed game (expects full game data from fetchGameDetails)
-  Future<void> saveRecentlyViewed(Map<String, dynamic> game) async {
+  /// Save recently viewed game
+  Future<void> saveRecentlyViewed(Game game) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
-
-    final gameId = game['id'];
-    if (gameId == null) return;
 
     final docRef = _firestore
         .collection('users')
         .doc(user.uid)
         .collection('recentlyViewed')
-        .doc(gameId.toString());
+        .doc(game.id.toString());
 
-    // ✅ Save only known serializable fields — including description_raw
-    //    now that we fetch full game details before saving
     await docRef.set({
-      'id': gameId,
-      'name': game['name'],
-      'background_image': game['background_image'],
-      'rating': game['rating'],
-      'released': game['released'],
-      'description_raw': game['description_raw'] ?? '',
+      'id': game.id,
+      'name': game.name,
+      'background_image': game.backgroundImage,
+      'rating': game.rating,
+      'released': game.released,
+      'description_raw': game.description,
       'timestamp': FieldValue.serverTimestamp(),
     });
   }
 
   /// Load recently viewed games
-  Future<List<Map<String, dynamic>>> loadRecentlyViewed() async {
+  Future<List<Game>> loadRecentlyViewed() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return [];
 
@@ -93,13 +90,15 @@ class UserService {
         .limit(10)
         .get();
 
-    return snapshot.docs.map((doc) => doc.data()).toList();
+    return snapshot.docs
+        .map((doc) => Game.fromJson(doc.data()))
+        .toList();
   }
 
   /// Navigate to favorites screen
   void goToFavorites(
       BuildContext context,
-      List<dynamic> games,
+      List<Game> games,
       Set<int> favorites,
       VoidCallback refreshFavorites) {
     Navigator.push(
@@ -107,7 +106,7 @@ class UserService {
       MaterialPageRoute(
         builder: (_) => FavoritesScreen(
           favoriteGames:
-              games.where((game) => favorites.contains(game['id'])).toList(),
+              games.where((game) => favorites.contains(game.id)).toList(),
           favorites: favorites,
           onToggleFavorite: (id) async {
             await toggleFavorite(id, games, favorites);

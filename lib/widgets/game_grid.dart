@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
+import '../models/game.dart';
+import 'game_card.dart';
 
 class GameGrid extends StatelessWidget {
-  final List<dynamic> games;
+  final List<Game> games;
   final Set<int> favorites;
   final bool isLoading;
   final bool isNextPageLoading;
   final VoidCallback onNextPage;
   final Function(int) onToggleFavorite;
-  final Function(Map<String, dynamic>)? onTapGame;
+  final Function(Game)? onTapGame;
 
   const GameGrid({
     super.key,
@@ -47,68 +49,15 @@ class GameGrid extends StatelessWidget {
         }
 
         final game = games[index];
-        final id = game['id'];
 
-        // ✅ FIX: Card wraps InkWell, not the other way around.
-        // InkWell outside Card is blocked by the Card's Material layer.
-        return Card(
-          elevation: 3,
-          clipBehavior: Clip.antiAlias, // ✅ keeps tap ripple within card corners
-          child: InkWell(
-            onTap: () {
-            print('🟢 CARD TAPPED: ${game['name']}');
-            if (onTapGame != null) {
-           print('🟡 calling onTapGame');
-           onTapGame!(game);
-          } else {
-           print('🔴 onTapGame is NULL');
-       }
-},
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Image.network(
-                    game['background_image'] ?? '',
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    errorBuilder: (context, error, stackTrace) =>
-                        const Icon(Icons.image_not_supported),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(6.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        game['name'] ?? '',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        "⭐ ${game['rating']}",
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: IconButton(
-                    icon: Icon(
-                      favorites.contains(id)
-                          ? Icons.favorite
-                          : Icons.favorite_border,
-                      color: favorites.contains(id) ? Colors.red : null,
-                    ),
-                    onPressed: () => onToggleFavorite(id),
-                  ),
-                ),
-              ],
-            ),
-          ),
+        return GameCard(
+          name: game.name,
+          imageUrl: game.backgroundImage,
+          rating: game.rating,
+          released: game.released,
+          isFavorite: favorites.contains(game.id),
+          onFavoriteToggle: () => onToggleFavorite(game.id),
+          onTap: () => onTapGame?.call(game),
         );
       },
     );

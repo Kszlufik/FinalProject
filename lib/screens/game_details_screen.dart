@@ -1,27 +1,15 @@
 import 'package:flutter/material.dart';
+import '../models/game.dart';
 
 class GameDetailsScreen extends StatelessWidget {
-  final String name;
-  final String imageUrl;
-  final double rating;
-  final String released;
-  final String description;
+  final Game game;
 
-  const GameDetailsScreen({
-    super.key,
-    required this.name,
-    required this.imageUrl,
-    required this.rating,
-    required this.released,
-    required this.description,
-  });
+  const GameDetailsScreen({super.key, required this.game});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(name),
-      ),
+      appBar: AppBar(title: Text(game.name)),
       body: SingleChildScrollView(
         child: Center(
           child: ConstrainedBox(
@@ -31,40 +19,24 @@ class GameDetailsScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // image here
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      imageUrl,
-                      fit: BoxFit.cover,
-                    ),
+                    child: Image.network(game.backgroundImage, fit: BoxFit.cover),
                   ),
                   const SizedBox(height: 24),
-
-                  // name of game the game fielfs
-                  Text(
-                    name,
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
+                  Text(game.name, style: Theme.of(context).textTheme.titleLarge),
                   const SizedBox(height: 8),
-
-                  // ratings + releaaee
                   Row(
                     children: [
-                      Icon(Icons.star, color: Colors.amber),
+                      const Icon(Icons.star, color: Colors.amber),
                       const SizedBox(width: 8),
-                      Text(rating.toString()),
+                      Text(game.rating.toString()),
                       const SizedBox(width: 24),
-                      Text('Released: $released'),
+                      Text('Released: ${game.released}'),
                     ],
                   ),
                   const SizedBox(height: 24),
-
-                  // desc
-                  Text(
-                    description,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
+                  Text(game.description, style: Theme.of(context).textTheme.bodyMedium),
                 ],
               ),
             ),

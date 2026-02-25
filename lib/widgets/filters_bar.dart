@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 class FiltersBar extends StatelessWidget {
-  final String sortBy; // current sorting value
-  final String genre; // current genre value
+  final String sortBy; 
+  final String genre; 
   final Function(String?) onSortChange;
   final Function(String?) onGenreChange;
   final VoidCallback onClearFilters;

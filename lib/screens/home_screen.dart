@@ -1,19 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
-// Services
 import '../services/rawg_service.dart';
 import '../services/user_service.dart';
-
-// Widgets
+import '../widgets/game_grid.dart';
 import '../widgets/search_bar.dart';
 import '../widgets/filters_bar.dart';
-import '../widgets/game_grid.dart';
 import '../widgets/recently_viewed_list.dart';
 import '../widgets/left_panel.dart';
-
-// Screens
-import '../screens/game_details_screen.dart';
+import 'game_details_screen.dart';
+import '../models/game.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -26,8 +21,8 @@ class _HomeScreenState extends State<HomeScreen> {
   final RawgService rawgService = RawgService();
   final UserService userService = UserService();
 
-  List<dynamic> games = [];
-  List<Map<String, dynamic>> recentlyViewed = [];
+  List<Game> games = [];
+  List<Game> recentlyViewed = [];
   Set<int> favoriteGameIds = {};
 
   bool isLoading = true;
@@ -72,7 +67,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
 
     setState(() {
-      games.addAll(result);
+      games.addAll(result.map((json) => Game.fromJson(json)).toList());
       isLoading = false;
       isNextPageLoading = false;
     });
@@ -90,7 +85,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void goToFavorites() {
     userService.goToFavorites(
-        context, games, favoriteGameIds, () => loadFavorites());
+      context,
+      games,
+      favoriteGameIds,
+      () => loadFavorites(),
+    );
   }
 
   void onSearch(String query) {
@@ -118,34 +117,27 @@ class _HomeScreenState extends State<HomeScreen> {
     fetchGames();
   }
 
-  Future<void> _navigateToGameDetails(Map<String, dynamic> game) async {
+  Future<void> _navigateToGameDetails(Game game) async {
     if (!mounted) return;
 
-    // Fetch full game details for description 
-    Map<String, dynamic> fullGame;
+    Game fullGame;
     try {
-      fullGame = await rawgService.fetchGameDetails(game['id'])
-          .timeout(const Duration(seconds: 5), onTimeout: () => Map<String, dynamic>.from(game));
-    } catch (e) {
-      fullGame = Map<String, dynamic>.from(game);
+      final json = await rawgService.fetchGameDetails(game.id)
+          .timeout(const Duration(seconds: 5), onTimeout: () => {});
+      fullGame = Game.fromJson({...json, 'id': game.id, 'name': game.name});
+    } catch (_) {
+      fullGame = game;
     }
 
     if (!mounted) return;
 
-    // Navigate first so user isn't waiting
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => GameDetailsScreen(
-          name: fullGame['name'] ?? '',
-          imageUrl: fullGame['background_image'] ?? '',
-          rating: (fullGame['rating'] ?? 0).toDouble(),
-          released: fullGame['released'] ?? 'Unknown',
-          description: fullGame['description_raw'] ?? 'No description available.',
-        ),
+        builder: (_) => GameDetailsScreen(game: fullGame),
       ),
     );
 
-    // Save to Firestore with timeoutthis was sdthe culprit in games not navigating to games details sscreen 
+    // Save recently viewed game (type-safe)
     userService.saveRecentlyViewed(fullGame)
         .timeout(const Duration(seconds: 5), onTimeout: () {})
         .then((_) {
@@ -179,7 +171,6 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(
             child: Column(
               children: [
-                // Search bar
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: GameSearchBar(
@@ -187,7 +178,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     onSubmitted: onSearch,
                   ),
                 ),
-                // Filters bar
                 FiltersBar(
                   sortBy: sortBy,
                   genre: genre,
@@ -195,12 +185,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   onGenreChange: onGenreChange,
                   onClearFilters: onClearFilters,
                 ),
-                // Recently viewed
                 RecentlyViewedList(
                   recentlyViewed: recentlyViewed,
-                  onTapGame: (game) => _navigateToGameDetails(game),
+                  onTapGame: _navigateToGameDetails,
                 ),
-                // Game grid
                 Expanded(
                   child: GameGrid(
                     games: games,
@@ -209,12 +197,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     isNextPageLoading: isNextPageLoading,
                     onNextPage: () => fetchGames(nextPage: true),
                     onToggleFavorite: (id) async {
-                      await userService.toggleFavorite(
-                          id, games, favoriteGameIds);
+                      await userService.toggleFavorite(id, games, favoriteGameIds);
                       if (!mounted) return;
                       setState(() {});
                     },
-                    onTapGame: (game) => _navigateToGameDetails(game),
+                    onTapGame: _navigateToGameDetails,
                   ),
                 ),
               ],
