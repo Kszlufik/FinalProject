@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
 import '../services/rawg_service.dart';
 import '../services/user_service.dart';
 import '../widgets/game_grid.dart';
@@ -7,7 +8,7 @@ import '../widgets/search_bar.dart';
 import '../widgets/filters_bar.dart';
 import '../widgets/recently_viewed_list.dart';
 import '../widgets/left_panel.dart';
-import 'game_details_screen.dart';
+import '../screens/game_details_screen.dart';
 import '../models/game.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -49,6 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> fetchGames({bool nextPage = false}) async {
     if (nextPage) {
+      if (isNextPageLoading) return;
       setState(() => isNextPageLoading = true);
       currentPage += 1;
     } else {
@@ -137,7 +139,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
 
-    // Save recently viewed game (type-safe)
     userService.saveRecentlyViewed(fullGame)
         .timeout(const Duration(seconds: 5), onTimeout: () {})
         .then((_) {
