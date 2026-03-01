@@ -34,6 +34,9 @@ class _HomeScreenState extends State<HomeScreen> {
   String sortBy = '-rating';
   String genre = '';
   String searchQuery = '';
+  String platform = '';
+  String dates = '';
+  String selectedPreset = 'Top Rated';
   final TextEditingController searchController = TextEditingController();
 
   @override
@@ -73,6 +76,8 @@ class _HomeScreenState extends State<HomeScreen> {
       sortBy: sortBy,
       genre: genre,
       search: searchQuery,
+      platform: platform,
+      dates: dates,
     );
 
     setState(() {
@@ -87,14 +92,13 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => recentlyViewed = list);
   }
 
-  void goToFavorites() {
-    userService.goToFavorites(
-      context,
-      games,
-      favoriteGameIds,
-      () => loadFavorites(),
-    );
-  }
+void goToFavorites() {
+  userService.goToFavorites(
+    context,
+    favoriteGameIds,
+    () => loadFavorites(),
+  );
+}
 
   void onSearch(String query) {
     searchQuery = query;
@@ -116,8 +120,25 @@ class _HomeScreenState extends State<HomeScreen> {
   void onClearFilters() {
     sortBy = '-rating';
     genre = '';
+    platform = '';
+    dates = '';
+    selectedPreset = 'Top Rated';
     searchController.clear();
     searchQuery = '';
+    fetchGames();
+  }
+
+  void onPlatformChange(String newPlatform) {
+    setState(() => platform = newPlatform);
+    fetchGames();
+  }
+
+  void onPresetChange(String newSortBy, String newDates) {
+    setState(() {
+      sortBy = newSortBy;
+      dates = newDates;
+      selectedPreset = '';
+    });
     fetchGames();
   }
 
@@ -126,7 +147,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
     Game fullGame;
     try {
-      final json = await rawgService.fetchGameDetails(game.id)
+      final json = await rawgService
+          .fetchGameDetails(game.id)
           .timeout(const Duration(seconds: 5), onTimeout: () => {});
       fullGame = Game.fromJson({...json, 'id': game.id, 'name': game.name});
     } catch (_) {
@@ -141,7 +163,8 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
 
-    userService.saveRecentlyViewed(fullGame)
+    userService
+        .saveRecentlyViewed(fullGame)
         .timeout(const Duration(seconds: 5), onTimeout: () {})
         .then((_) {
           if (mounted) loadRecentlyViewed();
@@ -170,7 +193,13 @@ class _HomeScreenState extends State<HomeScreen> {
       body: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (isWideScreen) const LeftPanel(),
+          if (isWideScreen)
+            LeftPanel(
+              onPlatformChange: onPlatformChange,
+              onPresetChange: onPresetChange,
+              selectedPlatform: platform,
+              selectedPreset: selectedPreset,
+            ),
           Expanded(
             child: Column(
               children: [
@@ -200,7 +229,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     isNextPageLoading: isNextPageLoading,
                     onNextPage: () => fetchGames(nextPage: true),
                     onToggleFavorite: (id) async {
-                      await userService.toggleFavorite(id, games, favoriteGameIds);
+                      await userService.toggleFavorite(
+                          id, games, favoriteGameIds);
                       await loadFavorites();
                     },
                     onTapGame: _navigateToGameDetails,

@@ -10,6 +10,8 @@ class RawgService {
     String sortBy = '-rating',
     String genre = '',
     String search = '',
+    String platform = '',
+    String dates = '',
   }) async {
     final queryParams = {
       'key': _apiKey,
@@ -18,6 +20,8 @@ class RawgService {
       'ordering': sortBy,
       if (genre.isNotEmpty) 'genres': genre,
       if (search.isNotEmpty) 'search': search,
+      if (platform.isNotEmpty) 'platforms': platform,
+      if (dates.isNotEmpty) 'dates': dates,
     };
 
     final uri = Uri.https('api.rawg.io', '/api/games', queryParams);
