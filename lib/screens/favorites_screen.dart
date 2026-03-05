@@ -21,20 +21,23 @@ class FavoritesScreen extends StatefulWidget {
 class _FavoritesScreenState extends State<FavoritesScreen> {
   final UserService _userService = UserService();
   List<Game> favoriteGames = [];
+  Set<int> reviewedGameIds = {};
   bool isLoading = true;
   String selectedPlatformFilter = 'All';
 
   @override
   void initState() {
     super.initState();
-    _loadFavorites();
+    _loadData();
   }
 
-  Future<void> _loadFavorites() async {
+  Future<void> _loadData() async {
     final games = await _userService.loadFavoriteGames();
+    final ids = await _userService.loadReviewedGameIds();
     if (mounted) {
       setState(() {
         favoriteGames = games;
+        reviewedGameIds = ids;
         isLoading = false;
       });
     }
@@ -76,7 +79,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               ? const Center(child: Text('No favorites yet!'))
               : Column(
                   children: [
-                    // Platform filter chips
                     if (availablePlatforms.length > 1)
                       SizedBox(
                         height: 50,
@@ -95,22 +97,20 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                                       : '${_platformEmoji(platform)} $platform',
                                 ),
                                 selected: isSelected,
-                                onSelected: (_) {
-                                  setState(() => selectedPlatformFilter = platform);
-                                },
+                                onSelected: (_) => setState(
+                                    () => selectedPlatformFilter = platform),
                               ),
                             );
                           }).toList(),
                         ),
                       ),
-                    // Games grid
                     Expanded(
                       child: GridView.builder(
                         padding: const EdgeInsets.all(20),
                         gridDelegate:
                             const SliverGridDelegateWithMaxCrossAxisExtent(
                           maxCrossAxisExtent: 200,
-                          childAspectRatio: 0.68,
+                          childAspectRatio: 0.55,
                           crossAxisSpacing: 20,
                           mainAxisSpacing: 20,
                         ),
@@ -118,24 +118,29 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                         itemBuilder: (context, index) {
                           final game = filteredGames[index];
                           return GameCard(
+                            gameId: game.id,
+                            gameName: game.name,
                             name: game.name,
                             imageUrl: game.backgroundImage,
                             rating: game.rating,
                             released: game.released,
                             isFavorite: widget.favorites.contains(game.id),
+                            hasReview: reviewedGameIds.contains(game.id),
                             onFavoriteToggle: () async {
                               await widget.onToggleFavorite(game.id);
-                              await _loadFavorites();
+                              await _loadData();
                             },
-                            onTap: () {
-                              Navigator.push(
+                            onTap: () async {
+                              await Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) =>
                                       GameDetailsScreen(game: game),
                                 ),
                               );
+                              await _loadData();
                             },
+                            onReviewSaved: () => _loadData(),
                           );
                         },
                       ),

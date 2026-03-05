@@ -42,7 +42,7 @@ class _GameDetailsScreenState extends State<GameDetailsScreen> {
       ),
     );
 
-    if (result == null) return; // user cancelled
+    if (result == null) return;
 
     if (result == 'delete') {
       await _userService.deleteReview(widget.game.id);
@@ -50,18 +50,16 @@ class _GameDetailsScreenState extends State<GameDetailsScreen> {
       return;
     }
 
-    // Save the review
     await _userService.saveReview(
       gameId: widget.game.id,
       gameName: widget.game.name,
+      imageUrl: widget.game.backgroundImage,
       reviewText: result['reviewText'],
       personalRating: result['personalRating'],
       status: result['status'],
     );
 
-    if (mounted) {
-      setState(() => existingReview = result);
-    }
+    if (mounted) setState(() => existingReview = result);
   }
 
   String _statusEmoji(String status) {
@@ -81,7 +79,9 @@ class _GameDetailsScreenState extends State<GameDetailsScreen> {
         actions: [
           IconButton(
             icon: Icon(
-              existingReview != null ? Icons.rate_review : Icons.rate_review_outlined,
+              existingReview != null
+                  ? Icons.rate_review
+                  : Icons.rate_review_outlined,
               color: existingReview != null
                   ? Theme.of(context).colorScheme.primary
                   : null,
@@ -100,7 +100,6 @@ class _GameDetailsScreenState extends State<GameDetailsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Game image
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                     child: Image.network(
@@ -110,15 +109,11 @@ class _GameDetailsScreenState extends State<GameDetailsScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-
-                  // Game name
                   Text(
                     widget.game.name,
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 8),
-
-                  // Rating and release
                   Row(
                     children: [
                       const Icon(Icons.star, color: Colors.amber),
@@ -129,31 +124,25 @@ class _GameDetailsScreenState extends State<GameDetailsScreen> {
                     ],
                   ),
                   const SizedBox(height: 8),
-
-                  // Platforms
                   if (widget.game.platforms.isNotEmpty)
                     Wrap(
                       spacing: 8,
-                      children: widget.game.platforms.map((p) => Chip(
-                        label: Text(p, style: const TextStyle(fontSize: 11)),
-                        padding: EdgeInsets.zero,
-                      )).toList(),
+                      children: widget.game.platforms
+                          .map((p) => Chip(
+                                label: Text(p,
+                                    style: const TextStyle(fontSize: 11)),
+                                padding: EdgeInsets.zero,
+                              ))
+                          .toList(),
                     ),
-
                   const SizedBox(height: 24),
-
-                  // Description
                   Text(
                     widget.game.description,
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
-
                   const SizedBox(height: 32),
-
-                  // Review section
                   const Divider(),
                   const SizedBox(height: 16),
-
                   if (isLoadingReview)
                     const Center(child: CircularProgressIndicator())
                   else if (existingReview != null) ...[
@@ -172,8 +161,6 @@ class _GameDetailsScreenState extends State<GameDetailsScreen> {
                       ],
                     ),
                     const SizedBox(height: 12),
-
-                    // Status badge
                     Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 6),
@@ -190,8 +177,6 @@ class _GameDetailsScreenState extends State<GameDetailsScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-
-                    // Personal star rating
                     Row(
                       children: List.generate(5, (index) {
                         return Icon(
@@ -204,8 +189,6 @@ class _GameDetailsScreenState extends State<GameDetailsScreen> {
                       }),
                     ),
                     const SizedBox(height: 12),
-
-                    // Review text
                     if (existingReview!['reviewText'] != null &&
                         existingReview!['reviewText'].toString().isNotEmpty)
                       Container(
@@ -221,7 +204,6 @@ class _GameDetailsScreenState extends State<GameDetailsScreen> {
                         ),
                       ),
                   ] else ...[
-                    // No review yet
                     Center(
                       child: Column(
                         children: [
@@ -233,7 +215,8 @@ class _GameDetailsScreenState extends State<GameDetailsScreen> {
                           const SizedBox(height: 8),
                           Text(
                             'No review yet',
-                            style: TextStyle(color: Colors.grey.shade500),
+                            style:
+                                TextStyle(color: Colors.grey.shade500),
                           ),
                           const SizedBox(height: 12),
                           ElevatedButton.icon(

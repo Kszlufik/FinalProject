@@ -13,6 +13,7 @@ class GameCard extends StatelessWidget {
   final VoidCallback onFavoriteToggle;
   final VoidCallback onTap;
   final String gameName;
+  final VoidCallback onReviewSaved;
 
   const GameCard({
     super.key,
@@ -26,6 +27,7 @@ class GameCard extends StatelessWidget {
     required this.onFavoriteToggle,
     required this.onTap,
     required this.gameName,
+    required this.onReviewSaved,
   });
 
   Future<void> _openReviewDialog(BuildContext context) async {
@@ -46,16 +48,20 @@ class GameCard extends StatelessWidget {
 
     if (result == 'delete') {
       await userService.deleteReview(gameId);
+      onReviewSaved();
       return;
     }
 
     await userService.saveReview(
       gameId: gameId,
       gameName: gameName,
+      imageUrl: imageUrl,
       reviewText: result['reviewText'],
       personalRating: result['personalRating'],
       status: result['status'],
     );
+
+    onReviewSaved();
   }
 
   @override
@@ -80,7 +86,6 @@ class GameCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                // Favorite button
                 Positioned(
                   top: 8,
                   right: 8,
@@ -92,7 +97,6 @@ class GameCard extends StatelessWidget {
                     onPressed: onFavoriteToggle,
                   ),
                 ),
-                // Review indicator badge
                 if (hasReview)
                   Positioned(
                     top: 8,
@@ -131,7 +135,6 @@ class GameCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text('Released: $released', style: const TextStyle(fontSize: 12)),
           const SizedBox(height: 4),
-          // Long press hint
           Text(
             'Hold to review',
             style: TextStyle(fontSize: 10, color: Colors.grey.shade400),

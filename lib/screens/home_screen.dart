@@ -9,6 +9,7 @@ import '../widgets/filters_bar.dart';
 import '../widgets/recently_viewed_list.dart';
 import '../widgets/left_panel.dart';
 import '../screens/game_details_screen.dart';
+import '../screens/reviews_screen.dart';
 import '../models/game.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -25,12 +26,12 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Game> games = [];
   List<Game> recentlyViewed = [];
   Set<int> favoriteGameIds = {};
+  Set<int> reviewedGameIds = {};
 
   bool isLoading = true;
   bool isNextPageLoading = false;
   int currentPage = 1;
 
-  // Filters & search
   String sortBy = '-rating';
   String genre = '';
   String searchQuery = '';
@@ -44,6 +45,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     fetchGames();
     loadFavorites();
+    loadReviewedGameIds();
     loadRecentlyViewed();
   }
 
@@ -56,6 +58,11 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> loadFavorites() async {
     final ids = await userService.loadFavorites();
     if (mounted) setState(() => favoriteGameIds = ids);
+  }
+
+  Future<void> loadReviewedGameIds() async {
+    final ids = await userService.loadReviewedGameIds();
+    if (mounted) setState(() => reviewedGameIds = ids);
   }
 
   Future<void> fetchGames({bool nextPage = false}) async {
@@ -92,13 +99,13 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => recentlyViewed = list);
   }
 
-void goToFavorites() {
-  userService.goToFavorites(
-    context,
-    favoriteGameIds,
-    () => loadFavorites(),
-  );
-}
+  void goToFavorites() {
+    userService.goToFavorites(
+      context,
+      favoriteGameIds,
+      () => loadFavorites(),
+    );
+  }
 
   void onSearch(String query) {
     searchQuery = query;
@@ -157,11 +164,13 @@ void goToFavorites() {
 
     if (!mounted) return;
 
-    Navigator.of(context).push(
+    await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => GameDetailsScreen(game: fullGame),
       ),
     );
+
+    if (mounted) loadReviewedGameIds();
 
     userService
         .saveRecentlyViewed(fullGame)
@@ -180,6 +189,19 @@ void goToFavorites() {
       appBar: AppBar(
         title: const Text('PlayPal'),
         actions: [
+          IconButton(
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const ReviewsScreen(),
+                ),
+              );
+              if (mounted) loadReviewedGameIds();
+            },
+            icon: const Icon(Icons.rate_review),
+            tooltip: 'My Reviews',
+          ),
           IconButton(
             onPressed: goToFavorites,
             icon: const Icon(Icons.favorite),
@@ -225,6 +247,7 @@ void goToFavorites() {
                   child: GameGrid(
                     games: games,
                     favorites: favoriteGameIds,
+                    reviewedGameIds: reviewedGameIds,
                     isLoading: isLoading,
                     isNextPageLoading: isNextPageLoading,
                     onNextPage: () => fetchGames(nextPage: true),
@@ -234,6 +257,7 @@ void goToFavorites() {
                       await loadFavorites();
                     },
                     onTapGame: _navigateToGameDetails,
+                    onReviewSaved: () => loadReviewedGameIds(),
                   ),
                 ),
               ],

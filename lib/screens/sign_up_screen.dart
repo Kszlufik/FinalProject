@@ -26,7 +26,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
-      Navigator.pop(context); // Go back to login after successful signup
+      Navigator.pop(context); 
     } on FirebaseAuthException catch (e) {
       setState(() {
         _errorMessage = e.message;

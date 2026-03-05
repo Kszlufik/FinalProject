@@ -1,24 +1,29 @@
 import 'package:flutter/material.dart';
 import '../models/game.dart';
+import '../widgets/game_card.dart';
 
 class GameGrid extends StatefulWidget {
   final List<Game> games;
   final Set<int> favorites;
+  final Set<int> reviewedGameIds;
   final bool isLoading;
   final bool isNextPageLoading;
   final VoidCallback onNextPage;
   final Function(int) onToggleFavorite;
   final Function(Game)? onTapGame;
+  final VoidCallback onReviewSaved;
 
   const GameGrid({
     super.key,
     required this.games,
     required this.favorites,
+    required this.reviewedGameIds,
     required this.isLoading,
     required this.isNextPageLoading,
     required this.onNextPage,
     required this.onToggleFavorite,
     this.onTapGame,
+    required this.onReviewSaved,
   });
 
   @override
@@ -31,7 +36,6 @@ class _GameGridState extends State<GameGrid> {
   @override
   void initState() {
     super.initState();
-
     _scrollController.addListener(() {
       if (_scrollController.position.pixels >=
               _scrollController.position.maxScrollExtent * 0.8 &&
@@ -60,69 +64,29 @@ class _GameGridState extends State<GameGrid> {
         maxCrossAxisExtent: 200,
         crossAxisSpacing: 10,
         mainAxisSpacing: 10,
-        childAspectRatio: 0.6,
+        childAspectRatio: 0.55,
       ),
       itemBuilder: (context, index) {
         if (index >= widget.games.length) {
-          // show loading spinner at bottom
           return const Center(child: CircularProgressIndicator());
         }
 
         final game = widget.games[index];
 
-        return Card(
-          elevation: 3,
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: () {
-              if (widget.onTapGame != null) widget.onTapGame!(game);
-            },
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Image.network(
-                    game.backgroundImage,
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    errorBuilder: (context, error, stackTrace) =>
-                        const Icon(Icons.image_not_supported),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(6.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        game.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        "⭐ ${game.rating}",
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: IconButton(
-                    icon: Icon(
-                      widget.favorites.contains(game.id)
-                          ? Icons.favorite
-                          : Icons.favorite_border,
-                      color:
-                          widget.favorites.contains(game.id) ? Colors.red : null,
-                    ),
-                    onPressed: () => widget.onToggleFavorite(game.id),
-                  ),
-                ),
-              ],
-            ),
-          ),
+        return GameCard(
+          gameId: game.id,
+          name: game.name,
+          gameName: game.name,
+          imageUrl: game.backgroundImage,
+          rating: game.rating,
+          released: game.released,
+          isFavorite: widget.favorites.contains(game.id),
+          hasReview: widget.reviewedGameIds.contains(game.id),
+          onFavoriteToggle: () => widget.onToggleFavorite(game.id),
+          onTap: () {
+            if (widget.onTapGame != null) widget.onTapGame!(game);
+          },
+          onReviewSaved: widget.onReviewSaved,
         );
       },
     );

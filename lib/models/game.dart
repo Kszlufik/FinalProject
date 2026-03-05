@@ -18,6 +18,8 @@ class Game {
   });
 
   factory Game.fromJson(Map<String, dynamic> json) {
+
+    
     // Parse platforms from RAWG response
     List<String> parsedPlatforms = [];
     if (json['platforms'] != null) {
