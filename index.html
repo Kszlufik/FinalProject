@@ -1,68 +1,342 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>My Final Year Project</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kamil Szlufik — PlayPal</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
-<style>
-body{
-font-family: Arial;
-margin:40px;
-background:#f4f4f4;
-}
+    body {
+      background: #0D1117;
+      color: #E6EDF3;
+      font-family: 'Segoe UI', sans-serif;
+      min-height: 100vh;
+    }
 
-.container{
-background:white;
-padding:30px;
-border-radius:10px;
-max-width:900px;
-margin:auto;
-}
+    a { color: #00E5FF; text-decoration: none; }
+    a:hover { text-decoration: underline; }
 
-img{
-width:150px;
-border-radius:10px;
-}
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 48px 24px;
+    }
 
-h1{
-color:#333;
-}
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      padding-bottom: 40px;
+      border-bottom: 1px solid #30363D;
+      margin-bottom: 40px;
+      flex-wrap: wrap;
+    }
 
-.links a{
-display:block;
-margin:10px 0;
-color:#0066cc;
-text-decoration:none;
-}
-</style>
+    .photo-placeholder {
+      width: 120px;
+      height: 160px;
+      background: #161B22;
+      border: 1px solid #30363D;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: #8B949E;
+      font-size: 12px;
+      text-align: center;
+      padding: 12px;
+      line-height: 1.6;
+    }
 
+    .header-info h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: #E6EDF3;
+      margin-bottom: 4px;
+    }
+
+    .header-info .student-id {
+      color: #8B949E;
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
+
+    .tag {
+      display: inline-block;
+      background: rgba(0,229,255,0.08);
+      border: 1px solid rgba(0,229,255,0.2);
+      color: #00E5FF;
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      margin: 3px 3px 3px 0;
+    }
+
+    /* Project section */
+    .project-card {
+      background: #161B22;
+      border: 1px solid #30363D;
+      border-radius: 12px;
+      padding: 28px;
+      margin-bottom: 24px;
+    }
+
+    .project-card .logo-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .logo-icon {
+      width: 48px;
+      height: 48px;
+      background: rgba(0,229,255,0.1);
+      border: 1px solid rgba(0,229,255,0.3);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    .project-card h2 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #E6EDF3;
+    }
+
+    .project-card .academic-title {
+      font-size: 13px;
+      color: #8B949E;
+      margin-top: 2px;
+    }
+
+    .project-card p {
+      color: #8B949E;
+      font-size: 14px;
+      line-height: 1.7;
+      margin-bottom: 20px;
+    }
+
+    .meta-row {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      font-size: 13px;
+      color: #8B949E;
+      padding-top: 16px;
+      border-top: 1px solid #30363D;
+    }
+
+    .meta-row span strong {
+      color: #E6EDF3;
+    }
+
+    /* Links grid */
+    .links-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .link-card {
+      background: #161B22;
+      border: 1px solid #30363D;
+      border-radius: 10px;
+      padding: 18px 20px;
+      transition: border-color 0.2s;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+
+    .link-card:hover {
+      border-color: #00E5FF;
+      text-decoration: none;
+    }
+
+    .link-card .link-icon {
+      font-size: 20px;
+      margin-top: 2px;
+    }
+
+    .link-card .link-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #E6EDF3;
+      margin-bottom: 3px;
+    }
+
+    .link-card .link-desc {
+      font-size: 11px;
+      color: #8B949E;
+    }
+
+    .link-card.disabled {
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    /* Tech stack */
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: #8B949E;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    .tech-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 32px;
+    }
+
+    .tech-pill {
+      background: #161B22;
+      border: 1px solid #30363D;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 12px;
+      color: #E6EDF3;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tech-pill .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    /* Footer */
+    .footer {
+      padding-top: 32px;
+      border-top: 1px solid #30363D;
+      font-size: 12px;
+      color: #8B949E;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+  </style>
 </head>
-
 <body>
+  <div class="container">
 
-<div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="photo-placeholder">
+        Photo<br>300 x 400<br>Add your<br>portrait here
+      </div>
+      <div class="header-info">
+        <h1>Kamil Szlufik</h1>
+        <div class="student-id">Your Student Number &nbsp;·&nbsp; your.email@student.ie</div>
+        <div style="margin-top: 12px;">
+          <span class="tag">Web App</span>
+          <span class="tag">Flutter</span>
+          <span class="tag">Firebase</span>
+          <span class="tag">Dart</span>
+          <span class="tag">Steam API</span>
+          <span class="tag">RAWG API</span>
+          <span class="tag">Cloud Functions</span>
+        </div>
+        <div style="margin-top: 14px; font-size: 13px; color: #8B949E;">
+          Supervisor: <span style="color: #E6EDF3;">Mujanid</span>
+        </div>
+      </div>
+    </div>
 
-<h1>Your Name</h1>
+    <!-- Project card -->
+    <div class="project-card">
+      <div class="logo-row">
+        <div class="logo-icon">🎮</div>
+        <div>
+          <h2>PlayPal</h2>
+          <div class="academic-title">A Social Game Discovery and Tracking Platform</div>
+        </div>
+      </div>
+      <p>
+        PlayPal is a web application that lets gamers discover new games, track what they are playing,
+        write personal reviews and connect with friends. Built with Flutter and Firebase, it integrates
+        the RAWG API for game discovery, Steam API for library sync, and Cloud Firestore for real-time
+        data persistence across a full social networking layer.
+      </p>
+      <div class="meta-row">
+        <span><strong>Type:</strong> Web App</span>
+        <span><strong>Platform:</strong> Flutter Web</span>
+        <span><strong>Year:</strong> 2026</span>
+        <span><strong>Supervisor:</strong> Mujanid</span>
+      </div>
+    </div>
 
-<img src="photo.png" alt="profile photo">
+    <!-- Links -->
+    <div class="section-title">Project Links</div>
+    <div class="links-grid">
+      <a class="link-card" href="https://github.com/Kszlufik/FinalProject" target="_blank">
+        <div class="link-icon">⌥</div>
+        <div>
+          <div class="link-label">GitHub Repository</div>
+          <div class="link-desc">Source code and commit history</div>
+        </div>
+      </a>
+      <a class="link-card disabled" href="#">
+        <div class="link-icon">▶</div>
+        <div>
+          <div class="link-label">Demo Video</div>
+          <div class="link-desc">YouTube walkthrough — coming soon</div>
+        </div>
+      </a>
+      <a class="link-card disabled" href="#">
+        <div class="link-icon">◉</div>
+        <div>
+          <div class="link-label">Live Application</div>
+          <div class="link-desc">Hosted app — coming soon</div>
+        </div>
+      </a>
+      <a class="link-card disabled" href="#">
+        <div class="link-icon">📄</div>
+        <div>
+          <div class="link-label">Final Report</div>
+          <div class="link-desc">Project documentation — coming soon</div>
+        </div>
+      </a>
+      <a class="link-card disabled" href="#">
+        <div class="link-icon">◈</div>
+        <div>
+          <div class="link-label">Presentation Slides</div>
+          <div class="link-desc">Coming soon</div>
+        </div>
+      </a>
+    </div>
 
-<h2>Project: Your Project Name</h2>
+    <!-- Tech stack -->
+    <div class="section-title">Technologies Used</div>
+    <div class="tech-grid">
+      <div class="tech-pill"><div class="dot" style="background:#54C5F8;"></div>Flutter / Dart</div>
+      <div class="tech-pill"><div class="dot" style="background:#FACC15;"></div>Firebase Authentication</div>
+      <div class="tech-pill"><div class="dot" style="background:#4ADE80;"></div>Cloud Firestore</div>
+      <div class="tech-pill"><div class="dot" style="background:#C084FC;"></div>Firebase Cloud Functions</div>
+      <div class="tech-pill"><div class="dot" style="background:#F97316;"></div>RAWG API</div>
+      <div class="tech-pill"><div class="dot" style="background:#60A5FA;"></div>Steam Web API</div>
+      <div class="tech-pill"><div class="dot" style="background:#00E5FF;"></div>Node.js</div>
+    </div>
 
-<p>
-Short description of your project goes here.
-</p>
+    <!-- Footer -->
+    <div class="footer">
+      <span>Kamil Szlufik — Final Year Project 2026</span>
+      <span>SETU Computing</span>
+    </div>
 
-<h3>Project Links</h3>
-
-<div class="links">
-<a href="#">Proposal</a>
-<a href="#">Final Report</a>
-<a href="#">GitHub Repository</a>
-<a href="#">Project Demo Video</a>
-<a href="#">Presentation Slides</a>
-</div>
-
-</div>
-
+  </div>
 </body>
 </html>
