@@ -11,216 +11,172 @@
       background: #0D1117;
       color: #E6EDF3;
       font-family: 'Segoe UI', sans-serif;
-      min-height: 100vh;
+      font-size: 14px;
+      line-height: 1.6;
     }
 
     a { color: #00E5FF; text-decoration: none; }
     a:hover { text-decoration: underline; }
 
     .container {
-      max-width: 860px;
+      max-width: 900px;
       margin: 0 auto;
       padding: 48px 24px;
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid #30363D;
+      margin: 36px 0;
     }
 
     /* Header */
     .header {
       display: flex;
-      align-items: center;
-      gap: 32px;
-      padding-bottom: 40px;
-      border-bottom: 1px solid #30363D;
-      margin-bottom: 40px;
+      gap: 28px;
+      align-items: flex-start;
       flex-wrap: wrap;
     }
 
-    .photo-placeholder {
-      width: 120px;
-      height: 160px;
-      background: #161B22;
+    .header img.photo {
+      width: 110px;
+      height: 147px;
+      object-fit: cover;
+      border-radius: 6px;
       border: 1px solid #30363D;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
       flex-shrink: 0;
-      color: #8B949E;
-      font-size: 12px;
-      text-align: center;
-      padding: 12px;
-      line-height: 1.6;
     }
 
     .header-info h1 {
-      font-size: 28px;
+      font-size: 24px;
       font-weight: 700;
-      color: #E6EDF3;
       margin-bottom: 4px;
     }
 
-    .header-info .student-id {
+    .header-info .meta {
       color: #8B949E;
       font-size: 13px;
-      margin-bottom: 16px;
-    }
-
-    .tag {
-      display: inline-block;
-      background: rgba(0,229,255,0.08);
-      border: 1px solid rgba(0,229,255,0.2);
-      color: #00E5FF;
-      font-size: 11px;
-      padding: 3px 10px;
-      border-radius: 20px;
-      margin: 3px 3px 3px 0;
-    }
-
-    /* Project section */
-    .project-card {
-      background: #161B22;
-      border: 1px solid #30363D;
-      border-radius: 12px;
-      padding: 28px;
-      margin-bottom: 24px;
-    }
-
-    .project-card .logo-row {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      margin-bottom: 20px;
-    }
-
-    .logo-icon {
-      width: 48px;
-      height: 48px;
-      background: rgba(0,229,255,0.1);
-      border: 1px solid rgba(0,229,255,0.3);
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 24px;
-    }
-
-    .project-card h2 {
-      font-size: 22px;
-      font-weight: 700;
-      color: #E6EDF3;
-    }
-
-    .project-card .academic-title {
-      font-size: 13px;
-      color: #8B949E;
-      margin-top: 2px;
-    }
-
-    .project-card p {
-      color: #8B949E;
-      font-size: 14px;
-      line-height: 1.7;
-      margin-bottom: 20px;
-    }
-
-    .meta-row {
-      display: flex;
-      gap: 24px;
-      flex-wrap: wrap;
-      font-size: 13px;
-      color: #8B949E;
-      padding-top: 16px;
-      border-top: 1px solid #30363D;
-    }
-
-    .meta-row span strong {
-      color: #E6EDF3;
-    }
-
-    /* Links grid */
-    .links-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 14px;
-      margin-bottom: 24px;
-    }
-
-    .link-card {
-      background: #161B22;
-      border: 1px solid #30363D;
-      border-radius: 10px;
-      padding: 18px 20px;
-      transition: border-color 0.2s;
-      display: flex;
-      align-items: flex-start;
-      gap: 14px;
-    }
-
-    .link-card:hover {
-      border-color: #00E5FF;
-      text-decoration: none;
-    }
-
-    .link-card .link-icon {
-      font-size: 20px;
-      margin-top: 2px;
-    }
-
-    .link-card .link-label {
-      font-size: 13px;
-      font-weight: 600;
-      color: #E6EDF3;
-      margin-bottom: 3px;
-    }
-
-    .link-card .link-desc {
-      font-size: 11px;
-      color: #8B949E;
-    }
-
-    .link-card.disabled {
-      opacity: 0.4;
-      pointer-events: none;
-    }
-
-    /* Tech stack */
-    .section-title {
-      font-size: 11px;
-      font-weight: 700;
-      color: #8B949E;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
       margin-bottom: 14px;
     }
 
-    .tech-grid {
+    .tags {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 32px;
+      gap: 6px;
+      margin-bottom: 12px;
     }
 
-    .tech-pill {
+    .tag {
+      background: #161B22;
+      border: 1px solid #30363D;
+      color: #8B949E;
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+
+    .supervisor {
+      font-size: 13px;
+      color: #8B949E;
+    }
+
+    .supervisor span {
+      color: #E6EDF3;
+    }
+
+    /* Section title */
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #8B949E;
+      margin-bottom: 14px;
+    }
+
+    /* Project info */
+    .project-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .project-academic {
+      color: #8B949E;
+      font-size: 13px;
+      margin-bottom: 14px;
+    }
+
+    .project-desc {
+      color: #8B949E;
+      max-width: 680px;
+    }
+
+    /* Screenshots */
+    .screenshots {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .screenshots img {
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid #30363D;
+      display: block;
+    }
+
+    /* Links */
+    .links {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+    }
+
+    .link-item {
       background: #161B22;
       border: 1px solid #30363D;
       border-radius: 8px;
-      padding: 8px 14px;
-      font-size: 12px;
-      color: #E6EDF3;
+      padding: 14px 16px;
       display: flex;
-      align-items: center;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .link-item a {
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .link-item .link-desc {
+      font-size: 11px;
+      color: #8B949E;
+    }
+
+    .link-item.disabled a {
+      color: #8B949E;
+      pointer-events: none;
+    }
+
+    /* Tech */
+    .tech-list {
+      display: flex;
+      flex-wrap: wrap;
       gap: 8px;
     }
 
-    .tech-pill .dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
+    .tech-item {
+      background: #161B22;
+      border: 1px solid #30363D;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 12px;
+      color: #E6EDF3;
     }
 
     /* Footer */
     .footer {
-      padding-top: 32px;
-      border-top: 1px solid #30363D;
       font-size: 12px;
       color: #8B949E;
       display: flex;
@@ -235,13 +191,13 @@
 
     <!-- Header -->
     <div class="header">
-      <div class="photo-placeholder">
-        Photo<br>300 x 400<br>Add your<br>portrait here
-      </div>
+      <img class="photo" src="image.png" alt="Kamil Szlufik" />
       <div class="header-info">
         <h1>Kamil Szlufik</h1>
-        <div class="student-id">Your Student Number &nbsp;·&nbsp; your.email@student.ie</div>
-        <div style="margin-top: 12px;">
+        <div class="meta">
+          Student No: 15377821 &nbsp;·&nbsp; 15377821@student.setu.ie
+        </div>
+        <div class="tags">
           <span class="tag">Web App</span>
           <span class="tag">Flutter</span>
           <span class="tag">Firebase</span>
@@ -249,87 +205,82 @@
           <span class="tag">Steam API</span>
           <span class="tag">RAWG API</span>
           <span class="tag">Cloud Functions</span>
+          <span class="tag">Node.js</span>
         </div>
-        <div style="margin-top: 14px; font-size: 13px; color: #8B949E;">
-          Supervisor: <span style="color: #E6EDF3;">Mujanid</span>
-        </div>
+        <div class="supervisor">Supervisor: <span>Mujanid</span></div>
       </div>
     </div>
 
-    <!-- Project card -->
-    <div class="project-card">
-      <div class="logo-row">
-        <div class="logo-icon">🎮</div>
-        <div>
-          <h2>PlayPal</h2>
-          <div class="academic-title">A Social Game Discovery and Tracking Platform</div>
-        </div>
-      </div>
-      <p>
-        PlayPal is a web application that lets gamers discover new games, track what they are playing,
-        write personal reviews and connect with friends. Built with Flutter and Firebase, it integrates
-        the RAWG API for game discovery, Steam API for library sync, and Cloud Firestore for real-time
-        data persistence across a full social networking layer.
-      </p>
-      <div class="meta-row">
-        <span><strong>Type:</strong> Web App</span>
-        <span><strong>Platform:</strong> Flutter Web</span>
-        <span><strong>Year:</strong> 2026</span>
-        <span><strong>Supervisor:</strong> Mujanid</span>
-      </div>
+    <hr>
+
+    <!-- Project -->
+    <div class="section-title">Project</div>
+    <div class="project-title">PlayPal</div>
+    <div class="project-academic">A Social Game Discovery and Tracking Platform</div>
+    <p class="project-desc">
+      PlayPal is a Flutter web application that allows gamers to discover new games, track their
+      playing status, write personal reviews and connect with friends. It integrates the RAWG API
+      for game discovery, Firebase for authentication and data persistence, and the Steam Web API
+      via Firebase Cloud Functions to sync a user's game library and achievements. The platform
+      features a full social layer including friend requests, friend profiles and a personalised
+      user profile with editable details.
+    </p>
+
+    <hr>
+
+    <!-- Screenshots -->
+    <div class="section-title">Screenshots</div>
+    <div class="screenshots">
+      <img src="home.png" alt="Home Screen" />
+      <img src="details.png" alt="Game Details" />
+      <img src="profile.png" alt="Profile Screen" />
+      <img src="steam.png" alt="Steam Integration" />
     </div>
+
+    <hr>
 
     <!-- Links -->
-    <div class="section-title">Project Links</div>
-    <div class="links-grid">
-      <a class="link-card" href="https://github.com/Kszlufik/FinalProject" target="_blank">
-        <div class="link-icon">⌥</div>
-        <div>
-          <div class="link-label">GitHub Repository</div>
-          <div class="link-desc">Source code and commit history</div>
-        </div>
-      </a>
-      <a class="link-card disabled" href="#">
-        <div class="link-icon">▶</div>
-        <div>
-          <div class="link-label">Demo Video</div>
-          <div class="link-desc">YouTube walkthrough — coming soon</div>
-        </div>
-      </a>
-      <a class="link-card disabled" href="#">
-        <div class="link-icon">◉</div>
-        <div>
-          <div class="link-label">Live Application</div>
-          <div class="link-desc">Hosted app — coming soon</div>
-        </div>
-      </a>
-      <a class="link-card disabled" href="#">
-        <div class="link-icon">📄</div>
-        <div>
-          <div class="link-label">Final Report</div>
-          <div class="link-desc">Project documentation — coming soon</div>
-        </div>
-      </a>
-      <a class="link-card disabled" href="#">
-        <div class="link-icon">◈</div>
-        <div>
-          <div class="link-label">Presentation Slides</div>
-          <div class="link-desc">Coming soon</div>
-        </div>
-      </a>
+    <div class="section-title">Links</div>
+    <div class="links">
+      <div class="link-item">
+        <a href="https://github.com/Kszlufik/FinalProject" target="_blank">GitHub Repository</a>
+        <span class="link-desc">Source code and commit history</span>
+      </div>
+      <div class="link-item disabled">
+        <a href="#">Demo Video</a>
+        <span class="link-desc">YouTube walkthrough — coming soon</span>
+      </div>
+      <div class="link-item disabled">
+        <a href="#">Live Application</a>
+        <span class="link-desc">Hosted app — coming soon</span>
+      </div>
+      <div class="link-item disabled">
+        <a href="#">Final Report</a>
+        <span class="link-desc">Coming soon</span>
+      </div>
+      <div class="link-item disabled">
+        <a href="#">Presentation Slides</a>
+        <span class="link-desc">Coming soon</span>
+      </div>
     </div>
+
+    <hr>
 
     <!-- Tech stack -->
     <div class="section-title">Technologies Used</div>
-    <div class="tech-grid">
-      <div class="tech-pill"><div class="dot" style="background:#54C5F8;"></div>Flutter / Dart</div>
-      <div class="tech-pill"><div class="dot" style="background:#FACC15;"></div>Firebase Authentication</div>
-      <div class="tech-pill"><div class="dot" style="background:#4ADE80;"></div>Cloud Firestore</div>
-      <div class="tech-pill"><div class="dot" style="background:#C084FC;"></div>Firebase Cloud Functions</div>
-      <div class="tech-pill"><div class="dot" style="background:#F97316;"></div>RAWG API</div>
-      <div class="tech-pill"><div class="dot" style="background:#60A5FA;"></div>Steam Web API</div>
-      <div class="tech-pill"><div class="dot" style="background:#00E5FF;"></div>Node.js</div>
+    <div class="tech-list">
+      <span class="tech-item">Flutter Web</span>
+      <span class="tech-item">Dart</span>
+      <span class="tech-item">Firebase Authentication</span>
+      <span class="tech-item">Cloud Firestore</span>
+      <span class="tech-item">Firebase Cloud Functions</span>
+      <span class="tech-item">Node.js</span>
+      <span class="tech-item">RAWG API</span>
+      <span class="tech-item">Steam Web API</span>
+      <span class="tech-item">GitHub</span>
     </div>
+
+    <hr>
 
     <!-- Footer -->
     <div class="footer">
