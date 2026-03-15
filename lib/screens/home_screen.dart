@@ -5,7 +5,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/rawg_service.dart';
 import 'package:playpal/services/user_service.dart';
 import '../widgets/game_grid.dart';
-import '../widgets/search_bar.dart';
 import '../widgets/filters_bar.dart';
 import '../widgets/recently_viewed_list.dart';
 import '../widgets/left_panel.dart';
