@@ -16,12 +16,14 @@ class _LoginScreenState extends State<LoginScreen> {
   static const _textPrimary = Color(0xFFE6EDF3);
   static const _textSecondary = Color(0xFF8B949E);
   static const _border = Color(0xFF30363D);
+  static const _green = Color(0xFF4ADE80);
 
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
   String? _errorMessage;
+  String? _successMessage;
 
   @override
   void dispose() {
@@ -31,12 +33,33 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> login() async {
-    setState(() { _isLoading = true; _errorMessage = null; });
+    setState(() { _isLoading = true; _errorMessage = null; _successMessage = null; });
     try {
       await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
+    } on FirebaseAuthException catch (e) {
+      setState(() => _errorMessage = e.message);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _resetPassword() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty) {
+      setState(() => _errorMessage = 'Please enter your email address first.');
+      return;
+    }
+
+    setState(() { _isLoading = true; _errorMessage = null; _successMessage = null; });
+
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+      if (mounted) {
+        setState(() => _successMessage = 'Password reset email sent to $email. Check your inbox!');
+      }
     } on FirebaseAuthException catch (e) {
       setState(() => _errorMessage = e.message);
     } finally {
@@ -65,9 +88,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   child: Stack(
                     children: [
-                      // Grid pattern
                       CustomPaint(painter: _GridPainter(), size: Size.infinite),
-                      // Center content
                       Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -167,9 +188,26 @@ class _LoginScreenState extends State<LoginScreen> {
                           onToggleObscure: () => setState(() => _obscurePassword = !_obscurePassword),
                           onSubmit: login,
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 10),
 
-                        // Error
+                        // Forgot password
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: GestureDetector(
+                            onTap: _resetPassword,
+                            child: const Text(
+                              'Forgot password?',
+                              style: TextStyle(
+                                color: _accent,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Error message
                         if (_errorMessage != null)
                           Container(
                             margin: const EdgeInsets.only(bottom: 16),
@@ -184,6 +222,25 @@ class _LoginScreenState extends State<LoginScreen> {
                                 const Icon(Icons.error_outline, color: Colors.redAccent, size: 16),
                                 const SizedBox(width: 8),
                                 Expanded(child: Text(_errorMessage!, style: const TextStyle(color: Colors.redAccent, fontSize: 13))),
+                              ],
+                            ),
+                          ),
+
+                        // Success message
+                        if (_successMessage != null)
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 16),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: _green.withOpacity(0.08),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: _green.withOpacity(0.3)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.check_circle_outline, color: _green, size: 16),
+                                const SizedBox(width: 8),
+                                Expanded(child: Text(_successMessage!, style: const TextStyle(color: _green, fontSize: 13))),
                               ],
                             ),
                           ),
@@ -220,6 +277,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ],
                           ),
                         ),
+                        const SizedBox(height: 32),
                       ],
                     ),
                   ),
@@ -291,7 +349,6 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-// Grid background painter
 class _GridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
