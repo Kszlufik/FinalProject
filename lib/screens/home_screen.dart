@@ -30,6 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
   static const _textSecondary = Color(0xFF8B949E);
   static const _border = Color(0xFF30363D);
 
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
   final RawgService rawgService = RawgService();
   final UserService userService = UserService();
 
@@ -210,6 +211,299 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Future<void> _confirmSignOut() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: _surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Sign out', style: TextStyle(color: _textPrimary)),
+        content: const Text(
+          'Are you sure you want to sign out?',
+          style: TextStyle(color: _textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel', style: TextStyle(color: _textSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text('Sign out'),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true) FirebaseAuth.instance.signOut();
+  }
+
+  Widget _buildMobileDrawer() {
+    final now = DateTime.now();
+    final thisYear = '${now.year}-01-01,${now.year}-12-31';
+    final last30Days =
+        '${now.subtract(const Duration(days: 30)).toIso8601String().substring(0, 10)},${now.toIso8601String().substring(0, 10)}';
+    final next90Days =
+        '${now.toIso8601String().substring(0, 10)},${now.add(const Duration(days: 90)).toIso8601String().substring(0, 10)}';
+
+    final presets = [
+      {'label': 'Top Rated', 'sortBy': '-rating', 'dates': '', 'icon': '⭐'},
+      {'label': 'Most Popular', 'sortBy': '-added', 'dates': '', 'icon': '🔥'},
+      {'label': 'New Releases', 'sortBy': '-released', 'dates': last30Days, 'icon': '🆕'},
+      {'label': 'Coming Soon', 'sortBy': '-added', 'dates': next90Days, 'icon': '🚀'},
+      {'label': 'Best of ${now.year}', 'sortBy': '-rating', 'dates': thisYear, 'icon': '🏆'},
+    ];
+
+    final platforms = [
+      {'label': 'All Platforms', 'id': '', 'icon': '🌐'},
+      {'label': 'PC', 'id': '4', 'icon': '🖥️'},
+      {'label': 'PlayStation', 'id': '187,18', 'icon': '🎮'},
+      {'label': 'Xbox', 'id': '186,1', 'icon': '🟩'},
+      {'label': 'Nintendo', 'id': '7', 'icon': '🔴'},
+      {'label': 'Mobile', 'id': '21,3', 'icon': '📱'},
+    ];
+
+    return Drawer(
+      backgroundColor: _bg,
+      width: 260,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 48, 16, 16),
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: _border)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(7),
+                  decoration: BoxDecoration(
+                    color: _accent.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: _accent.withOpacity(0.4)),
+                  ),
+                  child: const Icon(Icons.sports_esports, color: _accent, size: 18),
+                ),
+                const SizedBox(width: 10),
+                const Text(
+                  'PlayPal',
+                  style: TextStyle(
+                    color: _textPrimary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
+                    child: Text(
+                      'DISCOVER',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: _textSecondary,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                  ),
+                  ...presets.map((p) => _drawerTile(
+                    icon: p['icon']!,
+                    label: p['label']!,
+                    isSelected: selectedPreset == p['label'],
+                    onTap: () {
+                      onPresetChange(p['sortBy']!, p['dates']!);
+                      _scaffoldKey.currentState?.closeDrawer();
+                    },
+                  )),
+                  Container(
+                    height: 1,
+                    color: _border,
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
+                    child: Text(
+                      'PLATFORMS',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: _textSecondary,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                  ),
+                  ...platforms.map((p) => _drawerTile(
+                    icon: p['icon']!,
+                    label: p['label']!,
+                    isSelected: platform == p['id'],
+                    onTap: () {
+                      onPlatformChange(p['id']!);
+                      _scaffoldKey.currentState?.closeDrawer();
+                    },
+                  )),
+                  Container(
+                    height: 1,
+                    color: _border,
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
+                    child: Text(
+                      'NAVIGATE',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: _textSecondary,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                  ),
+                  _drawerTile(
+                    icon: '🎮',
+                    label: 'Steam',
+                    isSelected: false,
+                    onTap: () {
+                      _scaffoldKey.currentState?.closeDrawer();
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const SteamScreen()));
+                    },
+                  ),
+                  _drawerTile(
+                    icon: '⭐',
+                    label: 'My Reviews',
+                    isSelected: false,
+                    onTap: () async {
+                      _scaffoldKey.currentState?.closeDrawer();
+                      await Navigator.push(context, MaterialPageRoute(builder: (_) => const ReviewsScreen()));
+                      if (mounted) loadReviewedGameIds();
+                    },
+                  ),
+                  _drawerTile(
+                    icon: '❤️',
+                    label: 'Favourites',
+                    isSelected: false,
+                    onTap: () {
+                      _scaffoldKey.currentState?.closeDrawer();
+                      goToFavorites();
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          GestureDetector(
+            onTap: () {
+              _scaffoldKey.currentState?.closeDrawer();
+              _goToProfile();
+            },
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: _surface,
+                border: Border(top: BorderSide(color: _border)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        colors: [_accent, _accent.withOpacity(0.5)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        (FirebaseAuth.instance.currentUser?.email ?? '?')[0].toUpperCase(),
+                        style: const TextStyle(
+                          color: _bg,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      FirebaseAuth.instance.currentUser?.email ?? '',
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 11, color: _textPrimary),
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right, color: _textSecondary, size: 16),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _drawerTile({
+    required String icon,
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+        decoration: BoxDecoration(
+          color: isSelected ? _accent.withOpacity(0.12) : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected ? _accent.withOpacity(0.4) : Colors.transparent,
+          ),
+        ),
+        child: Row(
+          children: [
+            Text(icon, style: const TextStyle(fontSize: 14)),
+            const SizedBox(width: 10),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                color: isSelected ? _accent : _textSecondary,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+            if (isSelected) ...[
+              const Spacer(),
+              Container(
+                width: 5,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: _accent,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isWideScreen = MediaQuery.of(context).size.width > 900;
@@ -220,7 +514,9 @@ class _HomeScreenState extends State<HomeScreen> {
         colorScheme: const ColorScheme.dark(primary: _accent, surface: _surface),
       ),
       child: Scaffold(
+        key: _scaffoldKey,
         backgroundColor: _bg,
+        drawer: !isWideScreen ? _buildMobileDrawer() : null,
         body: Row(
           children: [
             if (isWideScreen)
@@ -234,7 +530,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Expanded(
               child: Column(
                 children: [
-                  _buildTopBar(),
+                  _buildTopBar(isWideScreen),
                   _buildSearchAndFilters(),
                   if (recentlyViewed.isNotEmpty)
                     Theme(
@@ -273,7 +569,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildTopBar() {
+  Widget _buildTopBar(bool isWideScreen) {
     return Container(
       height: 56,
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -283,6 +579,16 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: Row(
         children: [
+          if (!isWideScreen) ...[
+            IconButton(
+              icon: const Icon(Icons.menu, color: _accent, size: 22),
+              onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+              tooltip: 'Menu',
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+            const SizedBox(width: 8),
+          ],
           const Expanded(
             child: Text(
               'Discover Games',
@@ -293,50 +599,65 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-          // Profile
-          _topBarButton(
-            icon: Icons.person_outline,
-            tooltip: 'My Profile',
-            onTap: _goToProfile,
-          ),
-          const SizedBox(width: 4),
-          // Friends with badge
-          _friendsButton(),
-          const SizedBox(width: 4),
-          _topBarButton(
-            icon: Icons.videogame_asset_outlined,
-            tooltip: 'Steam',
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const SteamScreen()),
+          if (!isWideScreen) ...[
+            _topBarButton(
+              icon: Icons.person_outline,
+              tooltip: 'My Profile',
+              onTap: _goToProfile,
             ),
-          ),
-          const SizedBox(width: 4),
-          _topBarButton(
-            icon: Icons.rate_review_outlined,
-            tooltip: 'My Reviews',
-            onTap: () async {
-              await Navigator.push(
+            const SizedBox(width: 4),
+            _friendsButton(),
+            const SizedBox(width: 4),
+            _topBarButton(
+              icon: Icons.logout_outlined,
+              tooltip: 'Sign out',
+              onTap: _confirmSignOut,
+              color: _textSecondary,
+            ),
+          ] else ...[
+            _topBarButton(
+              icon: Icons.person_outline,
+              tooltip: 'My Profile',
+              onTap: _goToProfile,
+            ),
+            const SizedBox(width: 4),
+            _friendsButton(),
+            const SizedBox(width: 4),
+            _topBarButton(
+              icon: Icons.videogame_asset_outlined,
+              tooltip: 'Steam',
+              onTap: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const ReviewsScreen()),
-              );
-              if (mounted) loadReviewedGameIds();
-            },
-          ),
-          const SizedBox(width: 4),
-          _topBarButton(
-            icon: Icons.favorite_outline,
-            tooltip: 'Favourites',
-            onTap: goToFavorites,
-            color: Colors.redAccent,
-          ),
-          const SizedBox(width: 4),
-          _topBarButton(
-            icon: Icons.logout_outlined,
-            tooltip: 'Sign out',
-            onTap: () => FirebaseAuth.instance.signOut(),
-            color: _textSecondary,
-          ),
+                MaterialPageRoute(builder: (_) => const SteamScreen()),
+              ),
+            ),
+            const SizedBox(width: 4),
+            _topBarButton(
+              icon: Icons.rate_review_outlined,
+              tooltip: 'My Reviews',
+              onTap: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ReviewsScreen()),
+                );
+                if (mounted) loadReviewedGameIds();
+              },
+            ),
+            const SizedBox(width: 4),
+            _topBarButton(
+              icon: Icons.favorite_outline,
+              tooltip: 'Favourites',
+              onTap: goToFavorites,
+              color: Colors.redAccent,
+            ),
+            const SizedBox(width: 4),
+            _topBarButton(
+              icon: Icons.logout_outlined,
+              tooltip: 'Sign out',
+              onTap: _confirmSignOut,
+              color: _textSecondary,
+            ),
+          ],
         ],
       ),
     );

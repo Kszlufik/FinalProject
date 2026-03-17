@@ -94,7 +94,6 @@ class _LeftPanelState extends State<LeftPanel> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Logo area
           Container(
             padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
             decoration: BoxDecoration(
@@ -139,9 +138,7 @@ class _LeftPanelState extends State<LeftPanel> {
                     isSelected: widget.selectedPreset == preset['label'],
                     onTap: () => widget.onPresetChange(preset['sortBy']!, preset['dates']!),
                   )),
-
                   _divider(),
-
                   _sectionLabel('PLATFORMS'),
                   ...platforms.map((p) => _buildPlatformTile(
                     label: p['label']!,
@@ -325,7 +322,11 @@ class _LeftPanelState extends State<LeftPanel> {
                   Text(
                     displayName,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 11, color: _textPrimary, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: _textPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Row(
