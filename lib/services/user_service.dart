@@ -8,9 +8,50 @@ import '../screens/favorites_screen.dart';
 class UserService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  
+  /// Write an activity event to the global activity collection
+  Future<void> writeActivity({
+    required String type,
+    required int gameId,
+    required String gameName,
+    required String gameImage,
+    double? rating,
+    String? status,
+  }) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      
+      return;
+    }
+
+    
+
+    try {
+      final userDoc = await _firestore.collection('users').doc(user.uid).get();
+      final username = userDoc.data()?['username'] ?? user.email ?? 'Unknown';
+      final avatarColor = userDoc.data()?['avatarColor'] ?? '#00E5FF';
+
+      
+
+      await _firestore.collection('activity').add({
+        'uid': user.uid,
+        'username': username,
+        'avatarColor': avatarColor,
+        'type': type,
+        'gameId': gameId,
+        'gameName': gameName,
+        'gameImage': gameImage,
+        'rating': rating,
+        'status': status,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+
+    
+    } catch (e) {
+      
+    }
+  }
+
   /// Load favorites from Firestore
-  
   Future<Set<int>> loadFavorites() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return {};
@@ -26,9 +67,7 @@ class UserService {
     return ids;
   }
 
-  
-  /// Load full favo game objects from Firestore
-  
+  /// Load full favourite game objects from Firestore
   Future<List<Game>> loadFavoriteGames() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return [];
@@ -53,9 +92,7 @@ class UserService {
     }).toList();
   }
 
- 
   /// Toggle favorite status
-  
   Future<void> toggleFavorite(int id, List<Game> games, Set<int> favoriteIds) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -90,18 +127,25 @@ class UserService {
         });
 
         favoriteIds.add(id);
+
+        // Write activity event when game is favourited
+        await writeActivity(
+          type: 'favourited',
+          gameId: game.id,
+          gameName: game.name,
+          gameImage: game.backgroundImage,
+          rating: game.rating,
+        );
       }
 
       await saveFavoritesLocally(favoriteIds);
     } catch (e) {
-      print('Error toggling favorite: $e');
+      
       rethrow;
     }
   }
 
-
   /// Save a game review
-  
   Future<void> saveReview({
     required int gameId,
     required String gameName,
@@ -127,10 +171,19 @@ class UserService {
       'status': status,
       'timestamp': FieldValue.serverTimestamp(),
     });
+
+    // Write activity event when review is saved
+    await writeActivity(
+      type: 'reviewed',
+      gameId: gameId,
+      gameName: gameName,
+      gameImage: imageUrl,
+      rating: personalRating,
+      status: status,
+    );
   }
 
   /// Load a single game review
- 
   Future<Map<String, dynamic>?> loadReview(int gameId) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return null;
@@ -145,9 +198,7 @@ class UserService {
     return doc.exists ? doc.data() : null;
   }
 
-  
   /// Delete a game review
-  
   Future<void> deleteReview(int gameId) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -161,7 +212,6 @@ class UserService {
   }
 
   /// Load all reviews
-
   Future<List<Map<String, dynamic>>> loadAllReviews() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return [];
@@ -176,9 +226,7 @@ class UserService {
     return snapshot.docs.map((doc) => doc.data()).toList();
   }
 
-
   /// Load all reviewed game IDs
-  
   Future<Set<int>> loadReviewedGameIds() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return {};
@@ -192,9 +240,7 @@ class UserService {
     return snapshot.docs.map((doc) => int.parse(doc.id)).toSet();
   }
 
-  
   /// Save recently viewed game
-  
   Future<void> saveRecentlyViewed(Game game) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -217,7 +263,6 @@ class UserService {
   }
 
   /// Load recently viewed games
- 
   Future<List<Game>> loadRecentlyViewed() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return [];
@@ -233,9 +278,7 @@ class UserService {
     return snapshot.docs.map((doc) => Game.fromJson(doc.data())).toList();
   }
 
- 
   /// Local caching with SharedPreferences
- 
   Future<void> saveFavoritesLocally(Set<int> ids) async {
     final prefs = await SharedPreferences.getInstance();
     prefs.setStringList('favorites', ids.map((e) => e.toString()).toList());
@@ -247,9 +290,7 @@ class UserService {
     return list.map((e) => int.parse(e)).toSet();
   }
 
-
   /// Navigate to favorites screen
-  
   void goToFavorites(
       BuildContext context,
       Set<int> favorites,

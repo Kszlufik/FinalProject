@@ -13,6 +13,7 @@ import '../screens/reviews_screen.dart';
 import '../screens/steam_screen.dart';
 import '../screens/friends_screen.dart';
 import '../screens/profile_screen.dart';
+import '../screens/feed_screen.dart';
 import '../models/game.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -39,6 +40,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Set<int> favoriteGameIds = {};
   Set<int> reviewedGameIds = {};
   int _pendingRequestCount = 0;
+  int _selectedTab = 0;
 
   bool isLoading = true;
   bool isNextPageLoading = false;
@@ -531,39 +533,86 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 children: [
                   _buildTopBar(isWideScreen),
-                  _buildSearchAndFilters(),
-                  if (recentlyViewed.isNotEmpty)
-                    Theme(
-                      data: Theme.of(context).copyWith(
-                        textTheme: Theme.of(context).textTheme.apply(
-                          bodyColor: _textPrimary,
-                        ),
-                      ),
-                      child: RecentlyViewedList(
-                        recentlyViewed: recentlyViewed,
-                        onTapGame: _navigateToGameDetails,
-                      ),
+                  // Tab bar
+                  Container(
+                    color: _surface,
+                    child: Row(
+                      children: [
+                        _buildTab('Discover', 0),
+                        _buildTab('Feed', 1),
+                      ],
                     ),
+                  ),
+                  Container(height: 1, color: _border),
+                  // Tab content
                   Expanded(
-                    child: GameGrid(
-                      games: games,
-                      favorites: favoriteGameIds,
-                      reviewedGameIds: reviewedGameIds,
-                      isLoading: isLoading,
-                      isNextPageLoading: isNextPageLoading,
-                      onNextPage: () => fetchGames(nextPage: true),
-                      onToggleFavorite: (id) async {
-                        await userService.toggleFavorite(id, games, favoriteGameIds);
-                        await loadFavorites();
-                      },
-                      onTapGame: _navigateToGameDetails,
-                      onReviewSaved: () => loadReviewedGameIds(),
-                    ),
+                    child: _selectedTab == 0
+                        ? Column(
+                            children: [
+                              _buildSearchAndFilters(),
+                              if (recentlyViewed.isNotEmpty)
+                                Theme(
+                                  data: Theme.of(context).copyWith(
+                                    textTheme: Theme.of(context).textTheme.apply(
+                                      bodyColor: _textPrimary,
+                                    ),
+                                  ),
+                                  child: RecentlyViewedList(
+                                    recentlyViewed: recentlyViewed,
+                                    onTapGame: _navigateToGameDetails,
+                                  ),
+                                ),
+                              Expanded(
+                                child: GameGrid(
+                                  games: games,
+                                  favorites: favoriteGameIds,
+                                  reviewedGameIds: reviewedGameIds,
+                                  isLoading: isLoading,
+                                  isNextPageLoading: isNextPageLoading,
+                                  onNextPage: () => fetchGames(nextPage: true),
+                                  onToggleFavorite: (id) async {
+                                    await userService.toggleFavorite(id, games, favoriteGameIds);
+                                    await loadFavorites();
+                                  },
+                                  onTapGame: _navigateToGameDetails,
+                                  onReviewSaved: () => loadReviewedGameIds(),
+                                ),
+                              ),
+                            ],
+                          )
+                        : FeedScreen(key: UniqueKey()),
                   ),
                 ],
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTab(String label, int index) {
+    final isSelected = _selectedTab == index;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedTab = index),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: isSelected ? _accent : Colors.transparent,
+              width: 2,
+            ),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? _accent : _textSecondary,
+            fontSize: 14,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
         ),
       ),
     );
