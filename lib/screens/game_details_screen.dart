@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/game.dart';
 import '../services/user_service.dart';
 import '../widgets/review_dialog.dart';
+import '../screens/forum_screen.dart';
 
 class GameDetailsScreen extends StatefulWidget {
   final Game game;
@@ -76,6 +78,27 @@ class _GameDetailsScreenState extends State<GameDetailsScreen> {
     }
   }
 
+  Color _getAvatarColor(String? hex) {
+    if (hex == null) return _accent;
+    try {
+      return Color(int.parse('FF${hex.replaceAll('#', '')}', radix: 16));
+    } catch (_) {
+      return _accent;
+    }
+  }
+
+  String _formatTime(Timestamp? timestamp) {
+    if (timestamp == null) return '';
+    final now = DateTime.now();
+    final dt = timestamp.toDate();
+    final diff = now.difference(dt);
+    if (diff.inMinutes < 1) return 'just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    return '${dt.day}/${dt.month}/${dt.year}';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Theme(
@@ -104,6 +127,8 @@ class _GameDetailsScreenState extends State<GameDetailsScreen> {
                         _buildDescription(),
                         const SizedBox(height: 32),
                         _buildReviewSection(),
+                        const SizedBox(height: 32),
+                        _buildForumPreview(),
                         const SizedBox(height: 40),
                       ],
                     ),
@@ -159,7 +184,6 @@ class _GameDetailsScreenState extends State<GameDetailsScreen> {
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => Container(color: _surface2),
               ),
-            // Gradient overlay bottom
             const DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -269,6 +293,161 @@ class _GameDetailsScreenState extends State<GameDetailsScreen> {
           _buildExistingReview()
         else
           _buildNoReview(),
+      ],
+    );
+  }
+
+  Widget _buildForumPreview() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(height: 1, color: _border),
+        const SizedBox(height: 24),
+        Row(
+          children: [
+            const Text('DISCUSSION', style: TextStyle(color: _textSecondary, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+            const Spacer(),
+            GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => ForumScreen(gameId: widget.game.id, gameName: widget.game.name)),
+              ),
+              child: const Text('View all', style: TextStyle(color: _accent, fontSize: 12, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('forums')
+              .doc(widget.game.id.toString())
+              .collection('posts')
+              .orderBy('timestamp', descending: true)
+              .limit(2)
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center(child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: _accent, strokeWidth: 2)));
+            }
+
+            final docs = snapshot.data?.docs ?? [];
+
+            if (docs.isEmpty) {
+              return GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => ForumScreen(gameId: widget.game.id, gameName: widget.game.name)),
+                ),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: _surface,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: _border),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(Icons.forum_outlined, size: 32, color: _textSecondary.withOpacity(0.3)),
+                      const SizedBox(height: 8),
+                      const Text('No discussion yet', style: TextStyle(color: _textSecondary, fontSize: 13)),
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                        decoration: BoxDecoration(
+                          color: _accent.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: _accent.withOpacity(0.3)),
+                        ),
+                        child: const Text('Start the discussion', style: TextStyle(color: _accent, fontSize: 12, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+
+            return Column(
+              children: [
+                ...docs.map((doc) {
+                  final data = doc.data() as Map<String, dynamic>;
+                  final username = data['username'] ?? 'Unknown';
+                  final message = data['message'] ?? '';
+                  final timestamp = data['timestamp'] as Timestamp?;
+                  final likeCount = (data['likeCount'] as num?)?.toInt() ?? 0;
+                  final avatarColor = _getAvatarColor(data['avatarColor']);
+
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: _surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: _border),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 26, height: 26,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: LinearGradient(
+                                  colors: [avatarColor, avatarColor.withOpacity(0.5)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  username.isNotEmpty ? username[0].toUpperCase() : '?',
+                                  style: TextStyle(color: _bg, fontWeight: FontWeight.bold, fontSize: 11),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(username, style: const TextStyle(color: _textPrimary, fontWeight: FontWeight.bold, fontSize: 12)),
+                            const Spacer(),
+                            if (likeCount > 0) ...[
+                              const Icon(Icons.thumb_up, color: _accent, size: 12),
+                              const SizedBox(width: 3),
+                              Text('$likeCount', style: const TextStyle(color: _accent, fontSize: 11)),
+                              const SizedBox(width: 8),
+                            ],
+                            Text(_formatTime(timestamp), style: const TextStyle(color: _textSecondary, fontSize: 11)),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(message, style: const TextStyle(color: _textSecondary, fontSize: 13, height: 1.4), maxLines: 2, overflow: TextOverflow.ellipsis),
+                      ],
+                    ),
+                  );
+                }),
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => ForumScreen(gameId: widget.game.id, gameName: widget.game.name)),
+                  ),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: _accent.withOpacity(0.06),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: _accent.withOpacity(0.2)),
+                    ),
+                    child: const Center(
+                      child: Text('View full discussion', style: TextStyle(color: _accent, fontSize: 13, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
       ],
     );
   }
