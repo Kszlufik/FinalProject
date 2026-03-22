@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 class FiltersBar extends StatelessWidget {
-  final String sortBy; 
-  final String genre; 
+  final String sortBy;
+  final String genre;
   final Function(String?) onSortChange;
   final Function(String?) onGenreChange;
   final VoidCallback onClearFilters;
@@ -18,15 +18,19 @@ class FiltersBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // We implement sorting options
+     const _accent = Color(0xFF00E5FF);
+     const _surface = Color(0xFF161B22);
+     const _textSecondary = Color(0xFF8B949E);
+     const _border = Color(0xFF30363D);
+     const _bg = Color(0xFF0D1117);
+
     final sortOptions = <String, String>{
-      '-rating': 'Rating High → Low',
-      'rating': 'Rating Low → High',
-      '-released': 'Release New → Old',
-      'released': 'Release Old → New',
+      '-rating': 'Top Rated',
+      'rating': 'Lowest Rated',
+      '-released': 'Newest First',
+      'released': 'Oldest First',
     };
 
-    // genere options 
     final genreOptions = <String, String>{
       '': 'All Genres',
       '4': 'Action',
@@ -45,50 +49,87 @@ class FiltersBar extends StatelessWidget {
       '13': 'Educational',
     };
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 8.0),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
       child: Row(
         children: [
-          // sort dropdown
-          DropdownButton<String>(
-            value: sortOptions.containsKey(sortBy) ? sortBy : null,
-            hint: const Text('Sort by'),
-            items: sortOptions.entries
-                .map(
-                  (e) => DropdownMenuItem(
-                    value: e.key,
-                    child: Text(e.value),
-                  ),
-                )
-                .toList(),
+          // Sort dropdown
+          _buildDropdown<String>(
+            value: sortOptions.containsKey(sortBy) ? sortBy : '-rating',
+            items: sortOptions,
             onChanged: onSortChange,
+            icon: Icons.sort,
           ),
+          const SizedBox(width: 10),
 
-          const SizedBox(width: 16),
-
-          // genre dropdown
-          DropdownButton<String>(
+          // Genre dropdown
+          _buildDropdown<String>(
             value: genreOptions.containsKey(genre) ? genre : '',
-            hint: const Text('Genre'),
-            items: genreOptions.entries
-                .map(
-                  (e) => DropdownMenuItem(
-                    value: e.key,
-                    child: Text(e.value),
-                  ),
-                )
-                .toList(),
+            items: genreOptions,
             onChanged: onGenreChange,
+            icon: Icons.category_outlined,
           ),
+          const SizedBox(width: 10),
 
-          const SizedBox(width: 16),
-
-          // clear Filters Button
-          ElevatedButton(
-            onPressed: onClearFilters,
-            child: const Text('Clear'),
+          // Clear button
+          GestureDetector(
+            onTap: onClearFilters,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: _surface,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: _border),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  Icon(Icons.clear, color: _textSecondary, size: 14),
+                  SizedBox(width: 4),
+                  Text('Clear', style: TextStyle(color: _textSecondary, fontSize: 12)),
+                ],
+              ),
+            ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDropdown<T>({
+    required T value,
+    required Map<T, String> items,
+    required Function(T?) onChanged,
+    required IconData icon,
+  }) {
+    const _accent = Color(0xFF00E5FF);
+    const _surface = Color(0xFF161B22);
+    const _textPrimary = Color(0xFFE6EDF3);
+    const _textSecondary = Color(0xFF8B949E);
+    const _border = Color(0xFF30363D);
+    const _bg = Color(0xFF0D1117);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: _border),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<T>(
+          value: value,
+          dropdownColor: _surface,
+          style: const TextStyle(color: _textPrimary, fontSize: 12),
+          icon: const Icon(Icons.keyboard_arrow_down, color: _textSecondary, size: 16),
+          isDense: true,
+          items: items.entries.map((e) => DropdownMenuItem<T>(
+            value: e.key,
+            child: Text(e.value, style: const TextStyle(color: _textPrimary, fontSize: 12)),
+          )).toList(),
+          onChanged: onChanged,
+        ),
       ),
     );
   }

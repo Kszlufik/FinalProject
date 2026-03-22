@@ -52,9 +52,7 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(() => _errorMessage = 'Please enter your email address first.');
       return;
     }
-
     setState(() { _isLoading = true; _errorMessage = null; _successMessage = null; });
-
     try {
       await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
       if (mounted) {
@@ -69,14 +67,17 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isWide = screenWidth > 800;
+
     return Theme(
       data: ThemeData.dark(),
       child: Scaffold(
         backgroundColor: _bg,
         body: Row(
           children: [
-            // Left panel — decorative
-            if (MediaQuery.of(context).size.width > 800)
+            // Left decorative panel — only on wide screens
+            if (isWide)
               Expanded(
                 child: Container(
                   decoration: const BoxDecoration(
@@ -104,15 +105,9 @@ class _LoginScreenState extends State<LoginScreen> {
                               child: const Icon(Icons.sports_esports, color: _accent, size: 56),
                             ),
                             const SizedBox(height: 28),
-                            const Text(
-                              'PlayPal',
-                              style: TextStyle(color: _textPrimary, fontSize: 36, fontWeight: FontWeight.bold, letterSpacing: 2),
-                            ),
+                            const Text('PlayPal', style: TextStyle(color: _textPrimary, fontSize: 36, fontWeight: FontWeight.bold, letterSpacing: 2)),
                             const SizedBox(height: 10),
-                            const Text(
-                              'Your gaming universe',
-                              style: TextStyle(color: _textSecondary, fontSize: 16, letterSpacing: 1),
-                            ),
+                            const Text('Your gaming universe', style: TextStyle(color: _textSecondary, fontSize: 16, letterSpacing: 1)),
                             const SizedBox(height: 48),
                             _featurePill(Icons.star_rounded, 'Discover top rated games'),
                             const SizedBox(height: 12),
@@ -127,12 +122,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
 
-            // Right panel — form
+            // Right form panel
             SizedBox(
-              width: MediaQuery.of(context).size.width > 800 ? 420 : double.infinity,
+              width: isWide ? 420 : screenWidth,
               child: Container(
                 color: _bg,
-                padding: const EdgeInsets.symmetric(horizontal: 40),
+                padding: const EdgeInsets.symmetric(horizontal: 32),
                 child: Center(
                   child: SingleChildScrollView(
                     child: Column(
@@ -140,7 +135,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Mobile logo
-                        if (MediaQuery.of(context).size.width <= 800) ...[
+                        if (!isWide) ...[
                           Center(
                             child: Column(
                               children: [
@@ -166,7 +161,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         const Text('Sign in to continue your journey', style: TextStyle(color: _textSecondary, fontSize: 14)),
                         const SizedBox(height: 36),
 
-                        // Email
                         _fieldLabel('Email'),
                         const SizedBox(height: 8),
                         _inputField(
@@ -177,7 +171,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 20),
 
-                        // Password
                         _fieldLabel('Password'),
                         const SizedBox(height: 8),
                         _inputField(
@@ -190,24 +183,15 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 10),
 
-                        // Forgot password
                         Align(
                           alignment: Alignment.centerRight,
                           child: GestureDetector(
                             onTap: _resetPassword,
-                            child: const Text(
-                              'Forgot password?',
-                              style: TextStyle(
-                                color: _accent,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
+                            child: const Text('Forgot password?', style: TextStyle(color: _accent, fontSize: 12, fontWeight: FontWeight.w500)),
                           ),
                         ),
                         const SizedBox(height: 20),
 
-                        // Error message
                         if (_errorMessage != null)
                           Container(
                             margin: const EdgeInsets.only(bottom: 16),
@@ -226,7 +210,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
 
-                        // Success message
                         if (_successMessage != null)
                           Container(
                             margin: const EdgeInsets.only(bottom: 16),
@@ -245,7 +228,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
 
-                        // Login button
                         SizedBox(
                           width: double.infinity,
                           height: 50,
@@ -264,7 +246,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 24),
 
-                        // Sign up link
                         Center(
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,

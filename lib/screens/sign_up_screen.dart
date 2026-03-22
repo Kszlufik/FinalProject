@@ -48,18 +48,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
     setState(() { _isLoading = true; _errorMessage = null; });
 
     try {
-      //  Create auth accoount
       final cred = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: email,
         password: _passwordController.text,
       );
 
       final uid = cred.user!.uid;
-
-      // Wait for auth token to propagate
       await Future.delayed(const Duration(milliseconds: 2000));
 
-      // Check username uniqueness 
       final existing = await FirebaseFirestore.instance
           .collection('usernames')
           .doc(username.toLowerCase())
@@ -71,7 +67,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
         return;
       }
 
-      // Write user profile
       await FirebaseFirestore.instance.collection('users').doc(uid).set({
         'uid': uid,
         'email': email,
@@ -80,7 +75,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      //  Reserve username
       await FirebaseFirestore.instance
           .collection('usernames')
           .doc(username.toLowerCase())
@@ -99,13 +93,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isWide = screenWidth > 800;
+
     return Theme(
       data: ThemeData.dark(),
       child: Scaffold(
         backgroundColor: _bg,
         body: Row(
           children: [
-            if (MediaQuery.of(context).size.width > 800)
+            // Left decorative panel — only on wide screens
+            if (isWide)
               Expanded(
                 child: Container(
                   decoration: const BoxDecoration(
@@ -150,17 +148,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
               ),
 
+            // Right form panel
             SizedBox(
-              width: MediaQuery.of(context).size.width > 800 ? 420 : double.infinity,
+              width: isWide ? 420 : screenWidth,
               child: Container(
                 color: _bg,
-                padding: const EdgeInsets.symmetric(horizontal: 40),
+                padding: const EdgeInsets.symmetric(horizontal: 32),
                 child: Center(
                   child: SingleChildScrollView(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (MediaQuery.of(context).size.width <= 800) ...[
+                        // Mobile logo
+                        if (!isWide) ...[
                           Center(
                             child: Column(
                               children: [

@@ -533,7 +533,6 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 children: [
                   _buildTopBar(isWideScreen),
-                  // Tab bar
                   Container(
                     color: _surface,
                     child: Row(
@@ -544,7 +543,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   Container(height: 1, color: _border),
-                  // Tab content
                   Expanded(
                     child: _selectedTab == 0
                         ? Column(
@@ -619,9 +617,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildTopBar(bool isWideScreen) {
+    final isNarrow = MediaQuery.of(context).size.width < 400;
+
     return Container(
       height: 56,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: EdgeInsets.symmetric(horizontal: isNarrow ? 8 : 16),
       decoration: BoxDecoration(
         color: _surface,
         border: Border(bottom: BorderSide(color: _border)),
@@ -636,16 +636,17 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: isNarrow ? 4 : 8),
           ],
-          const Expanded(
+          Expanded(
             child: Text(
-              'Discover Games',
+              'PlayPal',
               style: TextStyle(
                 color: _textPrimary,
-                fontSize: 16,
+                fontSize: isNarrow ? 14 : 16,
                 fontWeight: FontWeight.bold,
               ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
           if (!isWideScreen) ...[
@@ -654,9 +655,9 @@ class _HomeScreenState extends State<HomeScreen> {
               tooltip: 'My Profile',
               onTap: _goToProfile,
             ),
-            const SizedBox(width: 4),
+            SizedBox(width: isNarrow ? 2 : 4),
             _friendsButton(),
-            const SizedBox(width: 4),
+            SizedBox(width: isNarrow ? 2 : 4),
             _topBarButton(
               icon: Icons.logout_outlined,
               tooltip: 'Sign out',
@@ -664,11 +665,7 @@ class _HomeScreenState extends State<HomeScreen> {
               color: _textSecondary,
             ),
           ] else ...[
-            _topBarButton(
-              icon: Icons.person_outline,
-              tooltip: 'My Profile',
-              onTap: _goToProfile,
-            ),
+            _topBarButton(icon: Icons.person_outline, tooltip: 'My Profile', onTap: _goToProfile),
             const SizedBox(width: 4),
             _friendsButton(),
             const SizedBox(width: 4),
@@ -713,6 +710,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _friendsButton() {
+    final isNarrow = MediaQuery.of(context).size.width < 400;
     return Tooltip(
       message: 'Friends',
       child: InkWell(
@@ -722,12 +720,12 @@ class _HomeScreenState extends State<HomeScreen> {
           clipBehavior: Clip.none,
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: EdgeInsets.all(isNarrow ? 6 : 8),
               decoration: BoxDecoration(
                 color: _accent.withOpacity(0.08),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(Icons.people_outline, color: _accent, size: 20),
+              child: Icon(Icons.people_outline, color: _accent, size: isNarrow ? 18 : 20),
             ),
             if (_pendingRequestCount > 0)
               Positioned(
@@ -764,18 +762,19 @@ class _HomeScreenState extends State<HomeScreen> {
     required VoidCallback onTap,
     Color color = _accent,
   }) {
+    final isNarrow = MediaQuery.of(context).size.width < 400;
     return Tooltip(
       message: tooltip,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(8),
         child: Container(
-          padding: const EdgeInsets.all(8),
+          padding: EdgeInsets.all(isNarrow ? 6 : 8),
           decoration: BoxDecoration(
             color: color.withOpacity(0.08),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(icon, color: color, size: 20),
+          child: Icon(icon, color: color, size: isNarrow ? 18 : 20),
         ),
       ),
     );
