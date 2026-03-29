@@ -19,6 +19,8 @@ class RawgService {
       'page': page.toString(),
       'ordering': sortBy,
       'esrb_rating': 'everyone,everyone-10-plus,teen,mature',
+      'exclude_additions': 'true',
+      'metacritic': '1,100',
       if (genre.isNotEmpty) 'genres': genre,
       if (search.isNotEmpty) 'search': search,
       if (platform.isNotEmpty) 'platforms': platform,
@@ -30,7 +32,17 @@ class RawgService {
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      return data['results'];
+      final results = data['results'] as List<dynamic>;
+
+      
+      final filtered = results.where((game) {
+        final esrb = game['esrb_rating'];
+        if (esrb == null) return true;
+        final slug = esrb['slug'] ?? '';
+        return slug != 'adults-only';
+      }).toList();
+
+      return filtered;
     } else {
       throw Exception('Failed to fetch games');
     }
