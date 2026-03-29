@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+// Full discussion thread for a specific game
 class ForumScreen extends StatefulWidget {
   final int gameId;
   final String gameName;
@@ -13,6 +14,7 @@ class ForumScreen extends StatefulWidget {
 }
 
 class _ForumScreenState extends State<ForumScreen> {
+  // App colour scheme
   static const _bg = Color(0xFF0D1117);
   static const _surface = Color(0xFF161B22);
   static const _surface2 = Color(0xFF1C2333);
@@ -27,6 +29,7 @@ class _ForumScreenState extends State<ForumScreen> {
   final _controller = TextEditingController();
   bool _isPosting = false;
 
+  // Shorthand getters used throughout the screen
   String get _uid => _auth.currentUser!.uid;
   String get _gameDocId => widget.gameId.toString();
 
@@ -36,6 +39,7 @@ class _ForumScreenState extends State<ForumScreen> {
     super.dispose();
   }
 
+  // Post a new comment to this game's forum thread
   Future<void> _postComment() async {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
@@ -43,6 +47,7 @@ class _ForumScreenState extends State<ForumScreen> {
     setState(() => _isPosting = true);
 
     try {
+      // Fetch username and avatar colour from Firestore profile
       final userDoc = await _db.collection('users').doc(_uid).get();
       final username = userDoc.data()?['username'] ?? _auth.currentUser?.email ?? 'Unknown';
       final avatarColor = userDoc.data()?['avatarColor'] ?? '#00E5FF';
@@ -73,14 +78,17 @@ class _ForumScreenState extends State<ForumScreen> {
     }
   }
 
+  // Toggle like on a post using Firestore array operations
   Future<void> _toggleLike(String postId, List likes) async {
     final ref = _db.collection('forums').doc(_gameDocId).collection('posts').doc(postId);
     if (likes.contains(_uid)) {
+      // Already liked — remove like
       await ref.update({
         'likes': FieldValue.arrayRemove([_uid]),
         'likeCount': FieldValue.increment(-1),
       });
     } else {
+      // Not liked yet — add like
       await ref.update({
         'likes': FieldValue.arrayUnion([_uid]),
         'likeCount': FieldValue.increment(1),
@@ -88,6 +96,7 @@ class _ForumScreenState extends State<ForumScreen> {
     }
   }
 
+  // Delete a post after confirmation dialog
   Future<void> _deletePost(String postId) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -111,6 +120,7 @@ class _ForumScreenState extends State<ForumScreen> {
     }
   }
 
+  // Converts hex colour string from Firestore into a Flutter Color
   Color _getAvatarColor(String? hex) {
     if (hex == null) return _accent;
     try {
@@ -120,6 +130,7 @@ class _ForumScreenState extends State<ForumScreen> {
     }
   }
 
+  // Returns a human readable relative time string
   String _formatTime(Timestamp? timestamp) {
     if (timestamp == null) return '';
     final now = DateTime.now();
@@ -159,7 +170,7 @@ class _ForumScreenState extends State<ForumScreen> {
         ),
         body: Column(
           children: [
-            // Posts list
+            // Real time post list using Firestore stream
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
                 stream: _db
@@ -190,7 +201,7 @@ class _ForumScreenState extends State<ForumScreen> {
                     );
                   }
 
-                  // Find top comment (most likes)
+                  // Find the post with the most likes to award the top comment badge
                   String? topPostId;
                   int maxLikes = 0;
                   for (final doc in docs) {
@@ -216,7 +227,7 @@ class _ForumScreenState extends State<ForumScreen> {
               ),
             ),
 
-            // Input field
+            // Comment input at the bottom
             Container(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
               decoration: BoxDecoration(
@@ -243,6 +254,7 @@ class _ForumScreenState extends State<ForumScreen> {
                     ),
                   ),
                   const SizedBox(width: 10),
+                  // Show spinner while posting, send button otherwise
                   _isPosting
                       ? SizedBox(width: 44, height: 44, child: CircularProgressIndicator(color: _accent, strokeWidth: 2))
                       : InkWell(
@@ -266,6 +278,7 @@ class _ForumScreenState extends State<ForumScreen> {
     );
   }
 
+  // Builds a single post card — gold border if it's the top comment
   Widget _buildPostCard(String postId, Map<String, dynamic> data, bool isTop) {
     final username = data['username'] ?? 'Unknown';
     final message = data['message'] ?? '';
@@ -281,6 +294,7 @@ class _ForumScreenState extends State<ForumScreen> {
       decoration: BoxDecoration(
         color: _surface,
         borderRadius: BorderRadius.circular(14),
+        // Gold border for top comment, normal border otherwise
         border: Border.all(
           color: isTop ? _gold.withOpacity(0.5) : _border,
           width: isTop ? 1.5 : 1,
@@ -291,10 +305,9 @@ class _ForumScreenState extends State<ForumScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header row
             Row(
               children: [
-                // Avatar
+                // Avatar circle with first letter of username
                 Container(
                   width: 32, height: 32,
                   decoration: BoxDecoration(
@@ -320,6 +333,7 @@ class _ForumScreenState extends State<ForumScreen> {
                       Row(
                         children: [
                           Text(username, style: const TextStyle(color: _textPrimary, fontWeight: FontWeight.bold, fontSize: 13)),
+                          // Trophy badge shown only on the top comment
                           if (isTop) ...[
                             const SizedBox(width: 6),
                             Container(
@@ -345,7 +359,7 @@ class _ForumScreenState extends State<ForumScreen> {
                     ],
                   ),
                 ),
-                // Delete button for own posts
+                // Delete button only visible on the user's own posts
                 if (isOwn)
                   IconButton(
                     icon: Icon(Icons.delete_outline, color: _textSecondary.withOpacity(0.5), size: 18),
@@ -356,10 +370,9 @@ class _ForumScreenState extends State<ForumScreen> {
               ],
             ),
             const SizedBox(height: 10),
-            // Message
             Text(message, style: const TextStyle(color: _textPrimary, fontSize: 14, height: 1.5)),
             const SizedBox(height: 10),
-            // Like button
+            // Like button — highlighted if current user has liked this post
             Row(
               children: [
                 GestureDetector(

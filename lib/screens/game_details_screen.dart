@@ -5,6 +5,7 @@ import '../services/user_service.dart';
 import '../widgets/review_dialog.dart';
 import '../screens/forum_screen.dart';
 
+// Shows full game details — metadata, user review, and discussion preview
 class GameDetailsScreen extends StatefulWidget {
   final Game game;
   const GameDetailsScreen({super.key, required this.game});
@@ -14,6 +15,7 @@ class GameDetailsScreen extends StatefulWidget {
 }
 
 class _GameDetailsScreenState extends State<GameDetailsScreen> {
+  // App colour scheme
   static const _bg = Color(0xFF0D1117);
   static const _surface = Color(0xFF161B22);
   static const _surface2 = Color(0xFF1C2333);
@@ -33,22 +35,28 @@ class _GameDetailsScreenState extends State<GameDetailsScreen> {
     _loadReview();
   }
 
+  // Load the user's existing review for this game from Firestore
   Future<void> _loadReview() async {
     final review = await _userService.loadReview(widget.game.id);
     if (mounted) setState(() { existingReview = review; isLoadingReview = false; });
   }
 
+  // Opens the review dialog — handles save, edit and delete
   Future<void> _openReviewDialog() async {
     final result = await showDialog<dynamic>(
       context: context,
       builder: (_) => ReviewDialog(gameName: widget.game.name, existingReview: existingReview),
     );
     if (result == null) return;
+
+    // User tapped delete
     if (result == 'delete') {
       await _userService.deleteReview(widget.game.id);
       if (mounted) setState(() => existingReview = null);
       return;
     }
+
+    // User saved a new or edited review
     await _userService.saveReview(
       gameId: widget.game.id,
       gameName: widget.game.name,
@@ -60,6 +68,7 @@ class _GameDetailsScreenState extends State<GameDetailsScreen> {
     if (mounted) setState(() => existingReview = result);
   }
 
+  // Returns colour based on play status
   Color _statusColor(String status) {
     switch (status) {
       case 'Completed': return const Color(0xFF4ADE80);
@@ -69,6 +78,7 @@ class _GameDetailsScreenState extends State<GameDetailsScreen> {
     }
   }
 
+  // Returns emoji based on play status
   String _statusEmoji(String status) {
     switch (status) {
       case 'Completed': return '✅';
@@ -78,6 +88,7 @@ class _GameDetailsScreenState extends State<GameDetailsScreen> {
     }
   }
 
+  // Converts hex colour string from Firestore into a Flutter Color
   Color _getAvatarColor(String? hex) {
     if (hex == null) return _accent;
     try {
@@ -87,6 +98,7 @@ class _GameDetailsScreenState extends State<GameDetailsScreen> {
     }
   }
 
+  // Returns human readable relative time string
   String _formatTime(Timestamp? timestamp) {
     if (timestamp == null) return '';
     final now = DateTime.now();
@@ -108,6 +120,7 @@ class _GameDetailsScreenState extends State<GameDetailsScreen> {
       ),
       child: Scaffold(
         backgroundColor: _bg,
+        // CustomScrollView lets us combine the collapsing hero image with scrollable content
         body: CustomScrollView(
           slivers: [
             _buildHeroAppBar(),
@@ -142,6 +155,7 @@ class _GameDetailsScreenState extends State<GameDetailsScreen> {
     );
   }
 
+  // Collapsing hero image with back button and review shortcut
   Widget _buildHeroAppBar() {
     return SliverAppBar(
       expandedHeight: 280,
@@ -158,6 +172,7 @@ class _GameDetailsScreenState extends State<GameDetailsScreen> {
         ),
       ),
       actions: [
+        // Review button changes icon and colour when a review exists
         Padding(
           padding: const EdgeInsets.all(8),
           child: CircleAvatar(
@@ -178,12 +193,14 @@ class _GameDetailsScreenState extends State<GameDetailsScreen> {
         background: Stack(
           fit: StackFit.expand,
           children: [
+            // Game cover image
             if (widget.game.backgroundImage.isNotEmpty)
               Image.network(
                 widget.game.backgroundImage,
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => Container(color: _surface2),
               ),
+            // Gradient fade into background colour at the bottom
             const DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -200,6 +217,7 @@ class _GameDetailsScreenState extends State<GameDetailsScreen> {
     );
   }
 
+  // Game title, RAWG rating badge and release date
   Widget _buildGameMeta() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -248,6 +266,7 @@ class _GameDetailsScreenState extends State<GameDetailsScreen> {
     );
   }
 
+  // Platform chips showing which platforms the game supports
   Widget _buildPlatformChips() {
     return Wrap(
       spacing: 8,
@@ -264,6 +283,7 @@ class _GameDetailsScreenState extends State<GameDetailsScreen> {
     );
   }
 
+  // Game description from RAWG — hidden if empty
   Widget _buildDescription() {
     if (widget.game.description.isEmpty) return const SizedBox.shrink();
     return Column(
@@ -279,6 +299,7 @@ class _GameDetailsScreenState extends State<GameDetailsScreen> {
     );
   }
 
+  // Shows the user's review or a prompt to write one
   Widget _buildReviewSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -297,6 +318,8 @@ class _GameDetailsScreenState extends State<GameDetailsScreen> {
     );
   }
 
+  // Forum preview section — shows 2 latest posts with a link to the full forum
+  // Uses StreamBuilder so new posts appear without needing a refresh
   Widget _buildForumPreview() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -317,6 +340,7 @@ class _GameDetailsScreenState extends State<GameDetailsScreen> {
           ],
         ),
         const SizedBox(height: 14),
+        // Real time listener — updates automatically when new posts arrive
         StreamBuilder<QuerySnapshot>(
           stream: FirebaseFirestore.instance
               .collection('forums')
@@ -332,6 +356,7 @@ class _GameDetailsScreenState extends State<GameDetailsScreen> {
 
             final docs = snapshot.data?.docs ?? [];
 
+            // No posts yet — show prompt to start discussion
             if (docs.isEmpty) {
               return GestureDetector(
                 onTap: () => Navigator.push(
@@ -367,6 +392,7 @@ class _GameDetailsScreenState extends State<GameDetailsScreen> {
               );
             }
 
+            // Show the 2 most recent posts as a preview
             return Column(
               children: [
                 ...docs.map((doc) {
@@ -390,6 +416,7 @@ class _GameDetailsScreenState extends State<GameDetailsScreen> {
                       children: [
                         Row(
                           children: [
+                            // User avatar
                             Container(
                               width: 26, height: 26,
                               decoration: BoxDecoration(
@@ -410,6 +437,7 @@ class _GameDetailsScreenState extends State<GameDetailsScreen> {
                             const SizedBox(width: 8),
                             Text(username, style: const TextStyle(color: _textPrimary, fontWeight: FontWeight.bold, fontSize: 12)),
                             const Spacer(),
+                            // Like count if any
                             if (likeCount > 0) ...[
                               const Icon(Icons.thumb_up, color: _accent, size: 12),
                               const SizedBox(width: 3),
@@ -426,6 +454,7 @@ class _GameDetailsScreenState extends State<GameDetailsScreen> {
                   );
                 }),
                 const SizedBox(height: 8),
+                // Button to open the full forum screen
                 GestureDetector(
                   onTap: () => Navigator.push(
                     context,
@@ -452,6 +481,7 @@ class _GameDetailsScreenState extends State<GameDetailsScreen> {
     );
   }
 
+  // Shows the user's saved review with status badge, star rating and edit button
   Widget _buildExistingReview() {
     final status = existingReview!['status'] ?? 'Playing';
     final personalRating = (existingReview!['personalRating'] as num?)?.toDouble() ?? 0;
@@ -470,6 +500,7 @@ class _GameDetailsScreenState extends State<GameDetailsScreen> {
         children: [
           Row(
             children: [
+              // Status badge
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
@@ -483,6 +514,7 @@ class _GameDetailsScreenState extends State<GameDetailsScreen> {
                 ),
               ),
               const Spacer(),
+              // Star rating
               Row(
                 children: List.generate(5, (i) => Icon(
                   personalRating > i ? Icons.star_rounded : Icons.star_outline_rounded,
@@ -491,6 +523,7 @@ class _GameDetailsScreenState extends State<GameDetailsScreen> {
                 )),
               ),
               const SizedBox(width: 12),
+              // Edit button
               GestureDetector(
                 onTap: _openReviewDialog,
                 child: Container(
@@ -505,6 +538,7 @@ class _GameDetailsScreenState extends State<GameDetailsScreen> {
               ),
             ],
           ),
+          // Review text if the user wrote any notes
           if (reviewText.isNotEmpty) ...[
             const SizedBox(height: 14),
             Container(
@@ -523,6 +557,7 @@ class _GameDetailsScreenState extends State<GameDetailsScreen> {
     );
   }
 
+  // Prompt shown when the user hasn't reviewed this game yet
   Widget _buildNoReview() {
     return GestureDetector(
       onTap: _openReviewDialog,

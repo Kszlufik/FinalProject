@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/game.dart';
 
+// Horizontal scrollable strip of recently viewed games shown above the main grid
 class RecentlyViewedList extends StatelessWidget {
   final List<Game> recentlyViewed;
   final Function(Game) onTapGame;
@@ -13,6 +14,7 @@ class RecentlyViewedList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Hide the strip entirely if there are no recently viewed games
     if (recentlyViewed.isEmpty) return const SizedBox.shrink();
 
     return SizedBox(
@@ -29,6 +31,7 @@ class RecentlyViewedList extends StatelessWidget {
               onTap: () => onTapGame(game),
               child: Column(
                 children: [
+                  // Game cover image
                   ClipRRect(
                     borderRadius: BorderRadius.circular(8),
                     child: Image.network(
@@ -41,6 +44,7 @@ class RecentlyViewedList extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
+                  // Game name truncated to one line
                   SizedBox(
                     width: 100,
                     child: Text(

@@ -19,6 +19,7 @@ class FavoritesScreen extends StatefulWidget {
 }
 
 class _FavoritesScreenState extends State<FavoritesScreen> {
+  // App colour scheme
   static const _bg = Color(0xFF0D1117);
   static const _surface = Color(0xFF161B22);
   static const _accent = Color(0xFF00E5FF);
@@ -30,6 +31,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   List<Game> favoriteGames = [];
   Set<int> reviewedGameIds = {};
   bool isLoading = true;
+
+  // Tracks which platform filter chip is selected
   String selectedPlatformFilter = 'All';
 
   @override
@@ -38,6 +41,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     _loadData();
   }
 
+  // Load favourite games and reviewed IDs from Firestore
   Future<void> _loadData() async {
     final games = await _userService.loadFavoriteGames();
     final ids = await _userService.loadReviewedGameIds();
@@ -50,16 +54,19 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     }
   }
 
+  // Build list of unique platforms from saved games for the filter chips
   List<String> get availablePlatforms {
     final all = favoriteGames.expand((g) => g.platforms).toSet().toList()..sort();
     return ['All', ...all];
   }
 
+  // Filter games by selected platform
   List<Game> get filteredGames {
     if (selectedPlatformFilter == 'All') return favoriteGames;
     return favoriteGames.where((g) => g.platforms.contains(selectedPlatformFilter)).toList();
   }
 
+  // Returns an emoji based on platform name
   String _platformEmoji(String platform) {
     if (platform.toLowerCase().contains('pc')) return '🖥️';
     if (platform.toLowerCase().contains('playstation')) return '🎮';
@@ -110,8 +117,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 ? _buildEmptyState()
                 : Column(
                     children: [
+                      // Only show platform filters if there are multiple platforms
                       if (availablePlatforms.length > 1) _buildPlatformFilters(),
-                      // Count bar
+                      // Count bar showing filtered vs total
                       Padding(
                         padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
                         child: Row(
@@ -130,6 +138,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                           ],
                         ),
                       ),
+                      // Responsive grid of game cards
                       Expanded(
                         child: GridView.builder(
                           padding: const EdgeInsets.all(16),
@@ -173,6 +182,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     );
   }
 
+  // Horizontal scrollable platform filter chips
   Widget _buildPlatformFilters() {
     return Container(
       height: 52,
@@ -208,6 +218,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     );
   }
 
+  // Shown when the user has no saved favourites yet
   Widget _buildEmptyState() {
     return Center(
       child: Column(

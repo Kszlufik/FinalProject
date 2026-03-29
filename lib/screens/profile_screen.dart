@@ -5,6 +5,7 @@ import '../services/steam_service.dart';
 import 'game_details_screen.dart';
 import '../models/game.dart';
 
+// The user's own profile — editable username, bio, avatar colour, stats and tabs
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -13,6 +14,7 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  // App colour scheme
   static const _bg = Color(0xFF0D1117);
   static const _surface = Color(0xFF161B22);
   static const _surface2 = Color(0xFF1C2333);
@@ -23,15 +25,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   static const _gold = Color(0xFFFFD700);
   static const _green = Color(0xFF4ADE80);
 
+  // Colour options available for the avatar picker
   static const List<Color> _avatarColors = [
-    Color(0xFF00E5FF),
-    Color(0xFF7C3AED),
-    Color(0xFFEC4899),
-    Color(0xFFF97316),
-    Color(0xFF10B981),
-    Color(0xFFEAB308),
-    Color(0xFF3B82F6),
-    Color(0xFFEF4444),
+    Color(0xFF00E5FF), Color(0xFF7C3AED), Color(0xFFEC4899), Color(0xFFF97316),
+    Color(0xFF10B981), Color(0xFFEAB308), Color(0xFF3B82F6), Color(0xFFEF4444),
   ];
 
   final _db = FirebaseFirestore.instance;
@@ -47,7 +44,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isLoadingSteam = false;
   int _selectedTab = 0;
 
-  // Edit state
+  // Inline edit state for username and bio
   bool _isEditingUsername = false;
   bool _isEditingBio = false;
   bool _isSaving = false;
@@ -68,6 +65,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.dispose();
   }
 
+  // Load profile, reviews and favourites all at once using Future.wait
   Future<void> _loadAll() async {
     try {
       final results = await Future.wait([
@@ -79,7 +77,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final userDoc = results[0] as DocumentSnapshot;
       final reviewsSnap = results[1] as QuerySnapshot;
       final favSnap = results[2] as QuerySnapshot;
-
       final profile = userDoc.data() as Map<String, dynamic>? ?? {};
 
       if (mounted) {
@@ -93,7 +90,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         });
       }
 
-      // Load Steam if connected
+      // If Steam is connected, load the library summary
       if (profile['steamId'] != null) {
         _loadSteam(profile['steamId']);
       }
@@ -113,6 +110,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  // Save updated username — checks uniqueness in the usernames collection first
   Future<void> _saveUsername() async {
     final newUsername = _usernameController.text.trim();
     if (newUsername.isEmpty || newUsername.length < 3) {
@@ -127,20 +125,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() { _isSaving = true; _editError = null; });
 
     try {
-      // Check if taken
+      // Check the usernames lookup collection for conflicts
       final existing = await _db.collection('usernames').doc(newUsername.toLowerCase()).get();
       if (existing.exists) {
         setState(() { _editError = 'That username is already taken.'; _isSaving = false; });
         return;
       }
 
-      // Delete old username reservation
+      // Remove the old username reservation and create a new one
       final oldUsername = _profile?['usernameLower'];
       if (oldUsername != null) {
         await _db.collection('usernames').doc(oldUsername).delete();
       }
 
-      // Save new
       await Future.wait([
         _db.collection('users').doc(_uid).update({
           'username': newUsername,
@@ -161,6 +158,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  // Save bio — straightforward Firestore update
   Future<void> _saveBio() async {
     final bio = _bioController.text.trim();
     setState(() { _isSaving = true; _editError = null; });
@@ -173,6 +171,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  // Save chosen avatar colour as a hex string in Firestore
   Future<void> _saveAvatarColor(Color color) async {
     final colorHex = '#${color.value.toRadixString(16).substring(2).toUpperCase()}';
     try {
@@ -191,6 +190,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ));
   }
 
+  // Converts hex colour string stored in Firestore into a Flutter Color
   Color _getAvatarColor() {
     final hex = _profile?['avatarColor'];
     if (hex == null) return _accent;
@@ -261,6 +261,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  // Profile header — avatar, username, email, bio, member since date
   Widget _buildHeader() {
     final username = _profile?['username'] ?? _auth.currentUser?.email ?? 'You';
     final email = _profile?['email'] ?? _auth.currentUser?.email ?? '';
@@ -280,7 +281,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Avatar with tap to change colour
+              // Avatar circle — tap to open colour picker
               GestureDetector(
                 onTap: _showAvatarColorPicker,
                 child: Stack(
@@ -304,6 +305,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                     ),
+                    // Paint palette icon to indicate tappable
                     Positioned(
                       bottom: 0,
                       right: 0,
@@ -325,7 +327,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Username row
+                    // Username — shows inline edit field or display row
                     if (_isEditingUsername)
                       _editField(
                         controller: _usernameController,
@@ -348,13 +350,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Text(email, style: const TextStyle(color: _textSecondary, fontSize: 13)),
                     if (createdAt != null) ...[
                       const SizedBox(height: 4),
-                      Text(
-                        'Member since ${_formatDate(createdAt)}',
-                        style: const TextStyle(color: _textSecondary, fontSize: 11),
-                      ),
+                      Text('Member since ${_formatDate(createdAt)}', style: const TextStyle(color: _textSecondary, fontSize: 11)),
                     ],
                     const SizedBox(height: 10),
-                    // Bio row
+                    // Bio — shows inline edit field or tappable text
                     if (_isEditingBio)
                       _editField(
                         controller: _bioController,
@@ -388,6 +387,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ],
           ),
+          // Inline error message for edit failures
           if (_editError != null) ...[
             const SizedBox(height: 12),
             Container(
@@ -411,6 +411,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  // Inline edit field with save and cancel buttons
   Widget _editField({
     required TextEditingController controller,
     required VoidCallback onSave,
@@ -442,6 +443,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         if (_isSaving)
           const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: _accent, strokeWidth: 2))
         else ...[
+          // Save button
           GestureDetector(
             onTap: onSave,
             child: Container(
@@ -451,6 +453,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           const SizedBox(width: 6),
+          // Cancel button
           GestureDetector(
             onTap: onCancel,
             child: Container(
@@ -464,6 +467,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  // Dialog to pick avatar colour from the preset palette
   void _showAvatarColorPicker() {
     showDialog(
       context: context,
@@ -499,6 +503,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  // Stats bar showing review counts, play statuses, favourites and average rating
   Widget _buildStatsRow() {
     final completed = _reviews.where((r) => r['status'] == 'Completed').length;
     final playing = _reviews.where((r) => r['status'] == 'Playing').length;
@@ -528,6 +533,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  // Individual stat card widget
   Widget _statCard(String value, String label, Color color) {
     return Expanded(
       child: Container(
@@ -548,6 +554,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  // Small Steam summary card shown when a Steam account is connected
   Widget _buildSteamSummary() {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
@@ -565,10 +572,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     Container(
                       padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1B2838),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+                      decoration: BoxDecoration(color: const Color(0xFF1B2838), borderRadius: BorderRadius.circular(8)),
                       child: Image.network('https://store.steampowered.com/favicon.ico', width: 20, height: 20, errorBuilder: (_, __, ___) => const Icon(Icons.videogame_asset, color: _textSecondary, size: 20)),
                     ),
                     const SizedBox(width: 12),
@@ -583,11 +587,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: _accent.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: _accent.withOpacity(0.2)),
-                      ),
+                      decoration: BoxDecoration(color: _accent.withOpacity(0.08), borderRadius: BorderRadius.circular(8), border: Border.all(color: _accent.withOpacity(0.2))),
                       child: const Text('Connected', style: TextStyle(color: _accent, fontSize: 11, fontWeight: FontWeight.bold)),
                     ),
                   ],
@@ -595,6 +595,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  // Tab switcher between Reviews and Favourites
   Widget _buildTabBar() {
     final tabs = ['Reviews', 'Favourites'];
     return Container(
@@ -633,6 +634,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  // List of user's own reviews — tappable to open game details
   Widget _buildReviews() {
     if (_reviews.isEmpty) return _emptyState(Icons.rate_review_outlined, 'No reviews yet', 'Head to a game and write your first review!');
     return ListView.builder(
@@ -697,6 +699,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  // Grid of user's favourited games
   Widget _buildFavorites() {
     if (_favorites.isEmpty) return _emptyState(Icons.favorite_outline, 'No favourites yet', 'Heart a game to save it here!');
     return GridView.builder(
@@ -749,8 +752,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  // Fallback placeholder for missing game cover images
   Widget _imgPlaceholder() => Container(width: 80, height: 90, color: _surface2, child: const Icon(Icons.videogame_asset, color: _textSecondary, size: 24));
 
+  // Generic empty state for both tabs
   Widget _emptyState(IconData icon, String title, String subtitle) {
     return Padding(
       padding: const EdgeInsets.all(48),
@@ -768,6 +773,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  // Converts a Firestore Timestamp to a readable date string
   String _formatDate(dynamic timestamp) {
     try {
       final dt = (timestamp as Timestamp).toDate();

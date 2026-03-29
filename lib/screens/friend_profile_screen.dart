@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/game.dart';
 import 'game_details_screen.dart';
 
+// Shows a friend's public profile — their reviews, favourites and stats
 class FriendProfileScreen extends StatefulWidget {
   final String friendUid;
   final String username;
@@ -14,6 +15,7 @@ class FriendProfileScreen extends StatefulWidget {
 }
 
 class _FriendProfileScreenState extends State<FriendProfileScreen> {
+  // App colour scheme
   static const _bg = Color(0xFF0D1117);
   static const _surface = Color(0xFF161B22);
   static const _surface2 = Color(0xFF1C2333);
@@ -38,6 +40,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
     _loadProfile();
   }
 
+  // Load profile, reviews and favourites in parallel using Future.wait
   Future<void> _loadProfile() async {
     try {
       final results = await Future.wait([
@@ -63,6 +66,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
     }
   }
 
+  // Returns colour based on play status
   Color _statusColor(String status) {
     switch (status) {
       case 'Completed': return _green;
@@ -72,6 +76,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
     }
   }
 
+  // Returns emoji based on play status
   String _statusEmoji(String status) {
     switch (status) {
       case 'Completed': return '✅';
@@ -122,11 +127,12 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
     );
   }
 
+  // Header showing avatar, username, email and currently playing game if any
   Widget _buildProfileHeader() {
     final email = _userProfile?['email'] ?? '';
     final username = _userProfile?['username'] ?? widget.username;
 
-    // Check if currently playing
+    // Check if the friend is currently playing anything
     final playing = _reviews.where((r) => r['status'] == 'Playing').toList();
     final currentGame = playing.isNotEmpty ? playing.first['gameName'] : null;
 
@@ -138,7 +144,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
       ),
       child: Row(
         children: [
-          // Avatar
+          // Avatar circle with first letter of username
           Container(
             width: 70,
             height: 70,
@@ -166,6 +172,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
                 Text(username, style: const TextStyle(color: _textPrimary, fontSize: 22, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
                 Text(email, style: const TextStyle(color: _textSecondary, fontSize: 13)),
+                // Show currently playing badge if applicable
                 if (currentGame != null) ...[
                   const SizedBox(height: 8),
                   Container(
@@ -178,6 +185,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        // Green pulsing dot to indicate active status
                         Container(width: 7, height: 7, decoration: BoxDecoration(color: _green, shape: BoxShape.circle, boxShadow: [BoxShadow(color: _green.withOpacity(0.6), blurRadius: 4)])),
                         const SizedBox(width: 6),
                         Text('Playing: $currentGame', style: const TextStyle(color: _accent, fontSize: 12, fontWeight: FontWeight.w500)),
@@ -193,6 +201,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
     );
   }
 
+  // Stats bar showing review count, completed, playing, favourites and average rating
   Widget _buildStatsRow() {
     final completed = _reviews.where((r) => r['status'] == 'Completed').length;
     final playing = _reviews.where((r) => r['status'] == 'Playing').length;
@@ -219,6 +228,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
     );
   }
 
+  // Individual stat card widget
   Widget _statCard(String value, String label, Color color) {
     return Expanded(
       child: Container(
@@ -238,6 +248,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
     );
   }
 
+  // Tab selector for Reviews and Favourites
   Widget _buildTabBar() {
     final tabs = ['Reviews', 'Favourites'];
     return Container(
@@ -267,6 +278,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
     );
   }
 
+  // Switches between reviews and favourites tab content
   Widget _buildTabContent() {
     switch (_selectedTab) {
       case 0: return _buildReviews();
@@ -275,6 +287,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
     }
   }
 
+  // List of the friend's reviews with status badge and star rating
   Widget _buildReviews() {
     if (_reviews.isEmpty) {
       return _emptyState(Icons.rate_review_outlined, 'No reviews yet');
@@ -292,6 +305,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
 
         return GestureDetector(
           onTap: () {
+            // Tap to open that game's details screen
             final game = Game(
               id: review['gameId'] ?? 0,
               name: review['gameName'] ?? '',
@@ -347,6 +361,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
     );
   }
 
+  // Grid of the friend's favourited games
   Widget _buildFavorites() {
     if (_favorites.isEmpty) return _emptyState(Icons.favorite_outline, 'No favourites yet');
     return GridView.builder(
@@ -399,8 +414,10 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
     );
   }
 
+  // Fallback image for missing game covers
   Widget _imgPlaceholder() => Container(width: 80, height: 90, color: _surface2, child: const Icon(Icons.videogame_asset, color: _textSecondary, size: 24));
 
+  // Generic empty state widget used by both tabs
   Widget _emptyState(IconData icon, String label) {
     return Padding(
       padding: const EdgeInsets.all(48),

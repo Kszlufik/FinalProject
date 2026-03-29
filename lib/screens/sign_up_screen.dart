@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+// Sign up screen — same split layout as login, collects username, email and password
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
 
@@ -10,6 +11,7 @@ class SignUpScreen extends StatefulWidget {
 }
 
 class _SignUpScreenState extends State<SignUpScreen> {
+  // App colour scheme
   static const _bg = Color(0xFF0D1117);
   static const _surface = Color(0xFF161B22);
   static const _accent = Color(0xFF00E5FF);
@@ -36,6 +38,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     final username = _usernameController.text.trim();
     final email = _emailController.text.trim();
 
+    // Basic validation before hitting Firebase
     if (username.isEmpty) {
       setState(() => _errorMessage = 'Please choose a username.');
       return;
@@ -48,25 +51,32 @@ class _SignUpScreenState extends State<SignUpScreen> {
     setState(() { _isLoading = true; _errorMessage = null; });
 
     try {
+      // Create the Firebase Auth account first
       final cred = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: email,
         password: _passwordController.text,
       );
 
       final uid = cred.user!.uid;
+
+      // Small delay needed — Firebase auth token takes a moment to propagate
+      // before Firestore will accept writes from this new account
       await Future.delayed(const Duration(milliseconds: 2000));
 
+      // Check the username is not already taken
       final existing = await FirebaseFirestore.instance
           .collection('usernames')
           .doc(username.toLowerCase())
           .get();
 
       if (existing.exists) {
+        // Username taken — delete the auth account we just created and bail out
         await cred.user!.delete();
         setState(() { _errorMessage = 'That username is already taken.'; _isLoading = false; });
         return;
       }
 
+      // Write the user profile to Firestore
       await FirebaseFirestore.instance.collection('users').doc(uid).set({
         'uid': uid,
         'email': email,
@@ -75,11 +85,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
+      // Reserve the username in the lookup collection
       await FirebaseFirestore.instance
           .collection('usernames')
           .doc(username.toLowerCase())
           .set({'uid': uid});
 
+      // Pop back to login — AuthGate will handle the rest
       if (mounted) Navigator.pop(context);
 
     } on FirebaseAuthException catch (e) {
@@ -102,7 +114,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         backgroundColor: _bg,
         body: Row(
           children: [
-            // Left decorative panel — only on wide screens
+            // Decorative left panel — hidden on mobile
             if (isWide)
               Expanded(
                 child: Container(
@@ -148,7 +160,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
               ),
 
-            // Right form panel
+            // Sign up form — fixed 420px on desktop, full width on mobile
             SizedBox(
               width: isWide ? 420 : screenWidth,
               child: Container(
@@ -159,7 +171,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Mobile logo
+                        // Show logo above form on mobile
                         if (!isWide) ...[
                           Center(
                             child: Column(
@@ -219,6 +231,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
                         const SizedBox(height: 24),
 
+                        // Error message shown on signup failure
                         if (_errorMessage != null)
                           Container(
                             margin: const EdgeInsets.only(bottom: 16),
@@ -237,6 +250,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             ),
                           ),
 
+                        // Create account button — shows spinner while loading
                         SizedBox(
                           width: double.infinity,
                           height: 50,
@@ -255,6 +269,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
                         const SizedBox(height: 24),
 
+                        // Link back to login
                         Center(
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -280,6 +295,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
+  // Feature highlight card shown on the left panel
   Widget _infoCard(IconData icon, String title, String subtitle) {
     return Container(
       width: 300,
@@ -314,10 +330,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
+  // Small label above each input field
   Widget _fieldLabel(String label) {
     return Text(label, style: const TextStyle(color: _textSecondary, fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 0.8));
   }
 
+  // Reusable styled text field
   Widget _inputField({
     required TextEditingController controller,
     required String hint,
@@ -354,6 +372,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 }
 
+// Draws the subtle cyan grid pattern on the left decorative panel
 class _GridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {

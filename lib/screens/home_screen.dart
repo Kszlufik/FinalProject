@@ -16,6 +16,7 @@ import '../screens/profile_screen.dart';
 import '../screens/feed_screen.dart';
 import '../models/game.dart';
 
+// Main screen — handles game discovery, feed tab, navigation and filters
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -24,6 +25,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  // App colour scheme
   static const _bg = Color(0xFF0D1117);
   static const _surface = Color(0xFF161B22);
   static const _accent = Color(0xFF00E5FF);
@@ -31,6 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
   static const _textSecondary = Color(0xFF8B949E);
   static const _border = Color(0xFF30363D);
 
+  // Key needed to open/close the mobile drawer programmatically
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   final RawgService rawgService = RawgService();
   final UserService userService = UserService();
@@ -40,12 +43,13 @@ class _HomeScreenState extends State<HomeScreen> {
   Set<int> favoriteGameIds = {};
   Set<int> reviewedGameIds = {};
   int _pendingRequestCount = 0;
-  int _selectedTab = 0;
+  int _selectedTab = 0; // 0 = Discover, 1 = Feed
 
   bool isLoading = true;
   bool isNextPageLoading = false;
   int currentPage = 1;
 
+  // Filter and sort state
   String sortBy = '-rating';
   String genre = '';
   String searchQuery = '';
@@ -70,6 +74,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  // Load count of pending friend requests for the orange badge on the friends button
   Future<void> _loadPendingRequests() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
@@ -93,12 +98,14 @@ class _HomeScreenState extends State<HomeScreen> {
     if (mounted) setState(() => reviewedGameIds = ids);
   }
 
+  // Fetches games from RAWG — supports pagination via nextPage flag
   Future<void> fetchGames({bool nextPage = false}) async {
     if (nextPage) {
       if (isNextPageLoading) return;
       setState(() => isNextPageLoading = true);
       currentPage += 1;
     } else {
+      // Fresh load — reset page and clear existing results
       setState(() {
         isLoading = true;
         currentPage = 1;
@@ -148,6 +155,7 @@ class _HomeScreenState extends State<HomeScreen> {
     fetchGames();
   }
 
+  // Resets all filters back to defaults
   void onClearFilters() {
     sortBy = '-rating';
     genre = '';
@@ -173,6 +181,7 @@ class _HomeScreenState extends State<HomeScreen> {
     fetchGames();
   }
 
+  // Fetches full game details before navigating — falls back to basic data on timeout
   Future<void> _navigateToGameDetails(Game game) async {
     if (!mounted) return;
     Game fullGame;
@@ -188,6 +197,7 @@ class _HomeScreenState extends State<HomeScreen> {
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => GameDetailsScreen(game: fullGame)),
     );
+    // Refresh reviewed IDs and recently viewed when returning from details
     if (mounted) loadReviewedGameIds();
     userService
         .saveRecentlyViewed(fullGame)
@@ -198,6 +208,7 @@ class _HomeScreenState extends State<HomeScreen> {
         .catchError((_) {});
   }
 
+  // Reload pending request count when returning from friends screen
   Future<void> _goToFriends() async {
     await Navigator.push(
       context,
@@ -213,6 +224,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // Sign out with confirmation dialog
   Future<void> _confirmSignOut() async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -245,6 +257,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (confirm == true) FirebaseAuth.instance.signOut();
   }
 
+  // Mobile drawer — replaces the left panel on screens under 900px
   Widget _buildMobileDrawer() {
     final now = DateTime.now();
     final thisYear = '${now.year}-01-01,${now.year}-12-31';
@@ -276,6 +289,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Drawer header with PlayPal logo
           Container(
             padding: const EdgeInsets.fromLTRB(16, 48, 16, 16),
             decoration: BoxDecoration(
@@ -309,6 +323,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Discover presets section
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
                     child: Text(
@@ -330,11 +345,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       _scaffoldKey.currentState?.closeDrawer();
                     },
                   )),
-                  Container(
-                    height: 1,
-                    color: _border,
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  ),
+                  Container(height: 1, color: _border, margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4)),
+                  // Platform filter section
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
                     child: Text(
@@ -356,11 +368,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       _scaffoldKey.currentState?.closeDrawer();
                     },
                   )),
-                  Container(
-                    height: 1,
-                    color: _border,
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  ),
+                  Container(height: 1, color: _border, margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4)),
+                  // Navigation links section
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
                     child: Text(
@@ -405,6 +414,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
+          // Profile shortcut at the bottom of the drawer
           GestureDetector(
             onTap: () {
               _scaffoldKey.currentState?.closeDrawer();
@@ -432,11 +442,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Center(
                       child: Text(
                         (FirebaseAuth.instance.currentUser?.email ?? '?')[0].toUpperCase(),
-                        style: const TextStyle(
-                          color: _bg,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                        ),
+                        style: const TextStyle(color: _bg, fontWeight: FontWeight.bold, fontSize: 15),
                       ),
                     ),
                   ),
@@ -458,6 +464,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // Reusable drawer navigation tile with selected state highlight
   Widget _drawerTile({
     required String icon,
     required String label,
@@ -473,9 +480,7 @@ class _HomeScreenState extends State<HomeScreen> {
         decoration: BoxDecoration(
           color: isSelected ? _accent.withOpacity(0.12) : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isSelected ? _accent.withOpacity(0.4) : Colors.transparent,
-          ),
+          border: Border.all(color: isSelected ? _accent.withOpacity(0.4) : Colors.transparent),
         ),
         child: Row(
           children: [
@@ -489,15 +494,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
             ),
+            // Small dot indicator for selected item
             if (isSelected) ...[
               const Spacer(),
               Container(
-                width: 5,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: _accent,
-                  shape: BoxShape.circle,
-                ),
+                width: 5, height: 5,
+                decoration: BoxDecoration(color: _accent, shape: BoxShape.circle),
               ),
             ],
           ],
@@ -508,6 +510,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Switch between desktop (left panel) and mobile (drawer) at 900px
     final isWideScreen = MediaQuery.of(context).size.width > 900;
 
     return Theme(
@@ -521,6 +524,7 @@ class _HomeScreenState extends State<HomeScreen> {
         drawer: !isWideScreen ? _buildMobileDrawer() : null,
         body: Row(
           children: [
+            // Left panel only shown on wide screens
             if (isWideScreen)
               LeftPanel(
                 onPlatformChange: onPlatformChange,
@@ -533,6 +537,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 children: [
                   _buildTopBar(isWideScreen),
+                  // Discover / Feed tab switcher
                   Container(
                     color: _surface,
                     child: Row(
@@ -551,9 +556,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               if (recentlyViewed.isNotEmpty)
                                 Theme(
                                   data: Theme.of(context).copyWith(
-                                    textTheme: Theme.of(context).textTheme.apply(
-                                      bodyColor: _textPrimary,
-                                    ),
+                                    textTheme: Theme.of(context).textTheme.apply(bodyColor: _textPrimary),
                                   ),
                                   child: RecentlyViewedList(
                                     recentlyViewed: recentlyViewed,
@@ -578,6 +581,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ],
                           )
+                        // UniqueKey forces FeedScreen to rebuild and reload every time the tab is opened
                         : FeedScreen(key: UniqueKey()),
                   ),
                 ],
@@ -589,6 +593,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // Tab button with animated underline indicator
   Widget _buildTab(String label, int index) {
     final isSelected = _selectedTab == index;
     return GestureDetector(
@@ -598,10 +603,7 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         decoration: BoxDecoration(
           border: Border(
-            bottom: BorderSide(
-              color: isSelected ? _accent : Colors.transparent,
-              width: 2,
-            ),
+            bottom: BorderSide(color: isSelected ? _accent : Colors.transparent, width: 2),
           ),
         ),
         child: Text(
@@ -616,6 +618,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // Top navigation bar — adapts padding and button sizes for narrow screens
   Widget _buildTopBar(bool isWideScreen) {
     final isNarrow = MediaQuery.of(context).size.width < 400;
 
@@ -628,6 +631,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: Row(
         children: [
+          // Hamburger menu only on mobile
           if (!isWideScreen) ...[
             IconButton(
               icon: const Icon(Icons.menu, color: _accent, size: 22),
@@ -649,22 +653,15 @@ class _HomeScreenState extends State<HomeScreen> {
               overflow: TextOverflow.ellipsis,
             ),
           ),
+          // Mobile shows fewer buttons to avoid overflow on narrow screens
           if (!isWideScreen) ...[
-            _topBarButton(
-              icon: Icons.person_outline,
-              tooltip: 'My Profile',
-              onTap: _goToProfile,
-            ),
+            _topBarButton(icon: Icons.person_outline, tooltip: 'My Profile', onTap: _goToProfile),
             SizedBox(width: isNarrow ? 2 : 4),
             _friendsButton(),
             SizedBox(width: isNarrow ? 2 : 4),
-            _topBarButton(
-              icon: Icons.logout_outlined,
-              tooltip: 'Sign out',
-              onTap: _confirmSignOut,
-              color: _textSecondary,
-            ),
+            _topBarButton(icon: Icons.logout_outlined, tooltip: 'Sign out', onTap: _confirmSignOut, color: _textSecondary),
           ] else ...[
+            // Desktop shows all buttons
             _topBarButton(icon: Icons.person_outline, tooltip: 'My Profile', onTap: _goToProfile),
             const SizedBox(width: 4),
             _friendsButton(),
@@ -672,43 +669,28 @@ class _HomeScreenState extends State<HomeScreen> {
             _topBarButton(
               icon: Icons.videogame_asset_outlined,
               tooltip: 'Steam',
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SteamScreen()),
-              ),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SteamScreen())),
             ),
             const SizedBox(width: 4),
             _topBarButton(
               icon: Icons.rate_review_outlined,
               tooltip: 'My Reviews',
               onTap: () async {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ReviewsScreen()),
-                );
+                await Navigator.push(context, MaterialPageRoute(builder: (_) => const ReviewsScreen()));
                 if (mounted) loadReviewedGameIds();
               },
             ),
             const SizedBox(width: 4),
-            _topBarButton(
-              icon: Icons.favorite_outline,
-              tooltip: 'Favourites',
-              onTap: goToFavorites,
-              color: Colors.redAccent,
-            ),
+            _topBarButton(icon: Icons.favorite_outline, tooltip: 'Favourites', onTap: goToFavorites, color: Colors.redAccent),
             const SizedBox(width: 4),
-            _topBarButton(
-              icon: Icons.logout_outlined,
-              tooltip: 'Sign out',
-              onTap: _confirmSignOut,
-              color: _textSecondary,
-            ),
+            _topBarButton(icon: Icons.logout_outlined, tooltip: 'Sign out', onTap: _confirmSignOut, color: _textSecondary),
           ],
         ],
       ),
     );
   }
 
+  // Friends button with orange notification badge for pending requests
   Widget _friendsButton() {
     final isNarrow = MediaQuery.of(context).size.width < 400;
     return Tooltip(
@@ -727,6 +709,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               child: Icon(Icons.people_outline, color: _accent, size: isNarrow ? 18 : 20),
             ),
+            // Badge only shows when there are pending requests
             if (_pendingRequestCount > 0)
               Positioned(
                 top: -4,
@@ -741,11 +724,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
                   child: Text(
                     '$_pendingRequestCount',
-                    style: const TextStyle(
-                      color: Colors.black,
-                      fontSize: 9,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: const TextStyle(color: Colors.black, fontSize: 9, fontWeight: FontWeight.bold),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -756,6 +735,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // Reusable top bar icon button — scales down on narrow screens
   Widget _topBarButton({
     required IconData icon,
     required String tooltip,
@@ -780,6 +760,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // Search bar and filters bar below it
   Widget _buildSearchAndFilters() {
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
@@ -791,25 +772,14 @@ class _HomeScreenState extends State<HomeScreen> {
             style: const TextStyle(color: _textPrimary, fontSize: 14),
             decoration: InputDecoration(
               hintText: 'Search games...',
-              hintStyle: TextStyle(
-                color: _textSecondary.withOpacity(0.5),
-                fontSize: 13,
-              ),
+              hintStyle: TextStyle(color: _textSecondary.withOpacity(0.5), fontSize: 13),
               filled: true,
               fillColor: _surface,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: _border),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: _border),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: _accent, width: 1.5),
-              ),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: _border)),
+              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: _border)),
+              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: _accent, width: 1.5)),
               prefixIcon: const Icon(Icons.search, color: _textSecondary, size: 18),
+              // Clear button appears when there is an active search query
               suffixIcon: searchQuery.isNotEmpty
                   ? IconButton(
                       icon: const Icon(Icons.clear, color: _textSecondary, size: 16),
@@ -824,6 +794,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onSubmitted: onSearch,
           ),
           const SizedBox(height: 6),
+          // Filters bar with sort and genre dropdowns
           Theme(
             data: ThemeData.dark().copyWith(
               colorScheme: const ColorScheme.dark(primary: _accent, surface: _surface),
@@ -833,14 +804,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 labelStyle: const TextStyle(color: _textSecondary, fontSize: 12),
                 secondaryLabelStyle: const TextStyle(color: _accent, fontSize: 12),
                 side: const BorderSide(color: _border),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               ),
               dropdownMenuTheme: DropdownMenuThemeData(
-                menuStyle: MenuStyle(
-                  backgroundColor: WidgetStatePropertyAll(_surface),
-                ),
+                menuStyle: MenuStyle(backgroundColor: WidgetStatePropertyAll(_surface)),
               ),
             ),
             child: FiltersBar(

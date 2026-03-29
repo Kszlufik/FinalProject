@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/steam_service.dart';
 
+// Steam integration screen — connect account, browse library and view achievements
 class SteamScreen extends StatefulWidget {
   const SteamScreen({super.key});
 
@@ -13,7 +14,7 @@ class _SteamScreenState extends State<SteamScreen> {
   final TextEditingController _steamIdController = TextEditingController();
   final TextEditingController _searchController = TextEditingController();
 
-  // Design constants
+  // App colour scheme
   static const _bg = Color(0xFF0D1117);
   static const _surface = Color(0xFF161B22);
   static const _surface2 = Color(0xFF1C2333);
@@ -50,6 +51,7 @@ class _SteamScreenState extends State<SteamScreen> {
     super.dispose();
   }
 
+  // Load previously saved Steam ID from Firestore on screen open
   Future<void> _loadSavedSteamId() async {
     final saved = await _steamService.loadSteamId();
     if (saved != null && saved.isNotEmpty && mounted) {
@@ -59,6 +61,7 @@ class _SteamScreenState extends State<SteamScreen> {
     }
   }
 
+  // Load Steam profile via Cloud Function — saves ID on success
   Future<void> _loadProfile(String id) async {
     setState(() { isLoadingProfile = true; errorMessage = null; });
     try {
@@ -74,6 +77,7 @@ class _SteamScreenState extends State<SteamScreen> {
     }
   }
 
+  // Load the user's full Steam game library
   Future<void> _loadGames(String id) async {
     setState(() => isLoadingGames = true);
     try {
@@ -84,6 +88,7 @@ class _SteamScreenState extends State<SteamScreen> {
     }
   }
 
+  // Toggle achievement panel for a game — collapse if already selected
   Future<void> _loadAchievements(int appId, String gameName) async {
     if (selectedAppId == appId) {
       setState(() { selectedAppId = null; selectedGameName = null; achievementsData = null; });
@@ -110,6 +115,7 @@ class _SteamScreenState extends State<SteamScreen> {
     _loadProfile(id);
   }
 
+  // Clear all Steam data and remove saved ID from Firestore
   void _onDisconnect() {
     setState(() {
       steamId = null; profile = null; gamesData = null;
@@ -120,6 +126,7 @@ class _SteamScreenState extends State<SteamScreen> {
     _steamService.saveSteamId('');
   }
 
+  // Filter game list by search query
   List<dynamic> get filteredGames {
     if (gamesData == null) return [];
     final games = gamesData!['games'] as List;
@@ -133,10 +140,7 @@ class _SteamScreenState extends State<SteamScreen> {
     return Theme(
       data: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: _bg,
-        colorScheme: const ColorScheme.dark(
-          primary: _accent,
-          surface: _surface,
-        ),
+        colorScheme: const ColorScheme.dark(primary: _accent, surface: _surface),
       ),
       child: Scaffold(
         backgroundColor: _bg,
@@ -165,6 +169,7 @@ class _SteamScreenState extends State<SteamScreen> {
             preferredSize: const Size.fromHeight(1),
             child: Container(height: 1, color: _border),
           ),
+          // Disconnect button only visible when connected
           actions: [
             if (profile != null)
               TextButton.icon(
@@ -201,6 +206,7 @@ class _SteamScreenState extends State<SteamScreen> {
     );
   }
 
+  // Input card for entering Steam ID before connecting
   Widget _buildConnectCard() {
     return Container(
       padding: const EdgeInsets.all(28),
@@ -208,7 +214,7 @@ class _SteamScreenState extends State<SteamScreen> {
         color: _surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: _border),
-        boxShadow: [BoxShadow(color: _accent.withOpacity(0.05), blurRadius: 30, spreadRadius: 0)],
+        boxShadow: [BoxShadow(color: _accent.withOpacity(0.05), blurRadius: 30)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -249,18 +255,9 @@ class _SteamScreenState extends State<SteamScreen> {
                     hintStyle: TextStyle(color: _textSecondary.withOpacity(0.5), fontSize: 13),
                     filled: true,
                     fillColor: _bg,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: _border),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: _border),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: _accent, width: 1.5),
-                    ),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: _border)),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: _border)),
+                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: _accent, width: 1.5)),
                     prefixIcon: const Icon(Icons.tag, color: _textSecondary, size: 18),
                     contentPadding: const EdgeInsets.symmetric(vertical: 14),
                   ),
@@ -294,6 +291,7 @@ class _SteamScreenState extends State<SteamScreen> {
     );
   }
 
+  // Red error banner
   Widget _buildError() {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -313,17 +311,14 @@ class _SteamScreenState extends State<SteamScreen> {
     );
   }
 
+  // Spinner shown while profile or games are loading
   Widget _buildLoadingState(String message) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(48),
         child: Column(
           children: [
-            SizedBox(
-              width: 40,
-              height: 40,
-              child: CircularProgressIndicator(color: _accent, strokeWidth: 2),
-            ),
+            SizedBox(width: 40, height: 40, child: CircularProgressIndicator(color: _accent, strokeWidth: 2)),
             const SizedBox(height: 16),
             Text(message, style: const TextStyle(color: _textSecondary, fontSize: 13)),
           ],
@@ -332,6 +327,7 @@ class _SteamScreenState extends State<SteamScreen> {
     );
   }
 
+  // Profile card showing Steam avatar, username and country
   Widget _buildProfileHero() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -342,24 +338,20 @@ class _SteamScreenState extends State<SteamScreen> {
       ),
       child: Row(
         children: [
-          // Avatar with cyan ring
+          // Avatar with cyan glow ring
           Container(
             padding: const EdgeInsets.all(3),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(color: _accent, width: 2),
-              boxShadow: [BoxShadow(color: _accent.withOpacity(0.3), blurRadius: 12, spreadRadius: 0)],
+              boxShadow: [BoxShadow(color: _accent.withOpacity(0.3), blurRadius: 12)],
             ),
             child: ClipOval(
               child: Image.network(
                 profile!['avatar'] ?? '',
-                width: 72,
-                height: 72,
-                fit: BoxFit.cover,
+                width: 72, height: 72, fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => Container(
-                  width: 72,
-                  height: 72,
-                  color: _surface2,
+                  width: 72, height: 72, color: _surface2,
                   child: const Icon(Icons.person, color: _textSecondary, size: 36),
                 ),
               ),
@@ -370,10 +362,7 @@ class _SteamScreenState extends State<SteamScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  profile!['username'] ?? 'Unknown',
-                  style: const TextStyle(color: _textPrimary, fontSize: 22, fontWeight: FontWeight.bold),
-                ),
+                Text(profile!['username'] ?? 'Unknown', style: const TextStyle(color: _textPrimary, fontSize: 22, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 6),
                 Row(
                   children: [
@@ -400,6 +389,7 @@ class _SteamScreenState extends State<SteamScreen> {
     );
   }
 
+  // Stats bar showing total games, played games and total hours
   Widget _buildStatsBar() {
     if (gamesData == null) return const SizedBox.shrink();
     final totalGames = gamesData!['totalGames'] ?? 0;
@@ -417,6 +407,7 @@ class _SteamScreenState extends State<SteamScreen> {
     );
   }
 
+  // Individual stat card widget
   Widget _buildStatCard(IconData icon, String value, String label, Color color) {
     return Expanded(
       child: Container(
@@ -430,10 +421,7 @@ class _SteamScreenState extends State<SteamScreen> {
           children: [
             Container(
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
+              decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
               child: Icon(icon, color: color, size: 18),
             ),
             const SizedBox(width: 12),
@@ -450,13 +438,14 @@ class _SteamScreenState extends State<SteamScreen> {
     );
   }
 
+  // Game library section with search and expandable achievement rows
   Widget _buildGamesSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text('GAME LIBRARY', style: TextStyle(color: _textSecondary, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
         const SizedBox(height: 12),
-        // Search
+        // Game search field
         TextField(
           controller: _searchController,
           style: const TextStyle(color: _textPrimary, fontSize: 14),
@@ -470,7 +459,9 @@ class _SteamScreenState extends State<SteamScreen> {
             focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: _accent, width: 1.5)),
             prefixIcon: const Icon(Icons.search, color: _textSecondary, size: 18),
             suffixIcon: searchQuery.isNotEmpty
-                ? IconButton(icon: const Icon(Icons.clear, color: _textSecondary, size: 16), onPressed: () { _searchController.clear(); setState(() => searchQuery = ''); })
+                ? IconButton(
+                    icon: const Icon(Icons.clear, color: _textSecondary, size: 16),
+                    onPressed: () { _searchController.clear(); setState(() => searchQuery = ''); })
                 : null,
             contentPadding: const EdgeInsets.symmetric(vertical: 12),
           ),
@@ -497,6 +488,7 @@ class _SteamScreenState extends State<SteamScreen> {
     );
   }
 
+  // Individual game row — tap to expand achievements panel
   Widget _buildGameRow(Map<dynamic, dynamic> game, bool isSelected) {
     final headerUrl = game['headerUrl']?.toString() ?? '';
     final hours = game['playtimeHours'] ?? 0;
@@ -524,9 +516,7 @@ class _SteamScreenState extends State<SteamScreen> {
                     child: headerUrl.isNotEmpty
                         ? Image.network(
                             headerUrl,
-                            width: 80,
-                            height: 37,
-                            fit: BoxFit.cover,
+                            width: 80, height: 37, fit: BoxFit.cover,
                             errorBuilder: (_, __, ___) => _gameIconFallback(game),
                           )
                         : _gameIconFallback(game),
@@ -545,16 +535,15 @@ class _SteamScreenState extends State<SteamScreen> {
                       ],
                     ),
                   ),
+                  // Hours badge
                   if (hours > 0)
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: _accent.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
+                      decoration: BoxDecoration(color: _accent.withOpacity(0.08), borderRadius: BorderRadius.circular(20)),
                       child: Text('${hours}h', style: const TextStyle(color: _accent, fontSize: 11, fontWeight: FontWeight.bold)),
                     ),
                   const SizedBox(width: 8),
+                  // Chevron indicates expandable content
                   Icon(
                     isSelected ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
                     color: isSelected ? _accent : _textSecondary,
@@ -564,19 +553,23 @@ class _SteamScreenState extends State<SteamScreen> {
               ),
             ),
           ),
+          // Achievements expand when game is selected
           if (isSelected) _buildAchievementsPanel(),
         ],
       ),
     );
   }
 
+  // Fallback when Steam header image fails to load
   Widget _gameIconFallback(Map<dynamic, dynamic> game) {
     final iconUrl = game['iconUrl']?.toString() ?? '';
     return iconUrl.isNotEmpty
-        ? Image.network(iconUrl, width: 80, height: 37, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(width: 80, height: 37, color: _surface2, child: const Icon(Icons.videogame_asset, color: _textSecondary, size: 20)))
+        ? Image.network(iconUrl, width: 80, height: 37, fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Container(width: 80, height: 37, color: _surface2, child: const Icon(Icons.videogame_asset, color: _textSecondary, size: 20)))
         : Container(width: 80, height: 37, color: _surface2, child: const Icon(Icons.videogame_asset, color: _textSecondary, size: 20));
   }
 
+  // Expanded achievement panel shown under a selected game
   Widget _buildAchievementsPanel() {
     if (isLoadingAchievements) {
       return Padding(
@@ -603,7 +596,7 @@ class _SteamScreenState extends State<SteamScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(height: 1, color: _border, margin: const EdgeInsets.only(bottom: 14)),
-          // Progress
+          // Achievement count and completion percentage
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -625,7 +618,7 @@ class _SteamScreenState extends State<SteamScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          // Progress bar
+          // Progress bar — gold when 100% complete
           ClipRRect(
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
@@ -636,19 +629,21 @@ class _SteamScreenState extends State<SteamScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          // Achievement list
+          // Individual achievement rows
           ...achievements.map((a) => _buildAchievementRow(a)),
         ],
       ),
     );
   }
 
+  // Single achievement row — icon, name, description and unlock date
   Widget _buildAchievementRow(dynamic a) {
     final achieved = a['achieved'] as bool? ?? false;
     final displayName = a['displayName']?.toString() ?? a['apiName']?.toString() ?? 'Unknown';
     final description = a['description']?.toString() ?? '';
     final icon = a['icon']?.toString() ?? '';
     final iconGray = a['iconGray']?.toString() ?? '';
+    // Use colour icon if unlocked, greyed out icon if locked
     final iconToShow = achieved ? icon : iconGray;
 
     return Padding(
@@ -656,10 +651,9 @@ class _SteamScreenState extends State<SteamScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Achievement icon
+          // Achievement icon with gold glow when unlocked
           Container(
-            width: 36,
-            height: 36,
+            width: 36, height: 36,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(6),
               boxShadow: achieved ? [BoxShadow(color: _gold.withOpacity(0.3), blurRadius: 8)] : [],
@@ -667,16 +661,11 @@ class _SteamScreenState extends State<SteamScreen> {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(6),
               child: iconToShow.isNotEmpty
-                  ? Image.network(
-                      iconToShow,
-                      width: 36,
-                      height: 36,
-                      fit: BoxFit.cover,
+                  ? Image.network(iconToShow, width: 36, height: 36, fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => Container(
                         color: _surface2,
                         child: Icon(achieved ? Icons.emoji_events : Icons.lock_outline, color: achieved ? _gold : _textSecondary, size: 18),
-                      ),
-                    )
+                      ))
                   : Container(
                       color: _surface2,
                       child: Icon(achieved ? Icons.emoji_events : Icons.lock_outline, color: achieved ? _gold : _textSecondary, size: 18),
@@ -701,6 +690,7 @@ class _SteamScreenState extends State<SteamScreen> {
               ],
             ),
           ),
+          // Unlock date shown on the right for unlocked achievements
           if (achieved && a['unlockedAt'] != null)
             Text(_formatDate(a['unlockedAt'].toString()), style: TextStyle(color: _textSecondary.withOpacity(0.5), fontSize: 11)),
         ],
@@ -708,6 +698,7 @@ class _SteamScreenState extends State<SteamScreen> {
     );
   }
 
+  // Converts ISO date string to readable format
   String _formatDate(String isoDate) {
     try {
       final date = DateTime.parse(isoDate);

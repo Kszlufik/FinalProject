@@ -3,6 +3,7 @@ import '../services/user_service.dart';
 import '../models/game.dart';
 import 'game_details_screen.dart';
 
+// Shows all the user's reviews with status filter chips and a stats bar
 class ReviewsScreen extends StatefulWidget {
   const ReviewsScreen({super.key});
 
@@ -11,6 +12,7 @@ class ReviewsScreen extends StatefulWidget {
 }
 
 class _ReviewsScreenState extends State<ReviewsScreen> {
+  // App colour scheme
   static const _bg = Color(0xFF0D1117);
   static const _surface = Color(0xFF161B22);
   static const _surface2 = Color(0xFF1C2333);
@@ -37,6 +39,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
     if (mounted) setState(() { reviews = data; isLoading = false; });
   }
 
+  // Filter reviews by selected status chip
   List<Map<String, dynamic>> get filteredReviews {
     if (selectedStatusFilter == 'All') return reviews;
     return reviews.where((r) => r['status'] == selectedStatusFilter).toList();
@@ -60,6 +63,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
     }
   }
 
+  // Returns count for a given status — used to show numbers on filter chips
   int _countForStatus(String status) {
     if (status == 'All') return reviews.length;
     return reviews.where((r) => r['status'] == status).length;
@@ -121,6 +125,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
     );
   }
 
+  // Summary bar showing total, completed, playing and dropped counts
   Widget _buildStatsBar() {
     final completed = reviews.where((r) => r['status'] == 'Completed').length;
     final playing = reviews.where((r) => r['status'] == 'Playing').length;
@@ -143,6 +148,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
     );
   }
 
+  // Individual stat pill in the stats bar
   Widget _statPill(String value, String label, Color color) {
     return Expanded(
       child: Container(
@@ -162,6 +168,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
     );
   }
 
+  // Horizontal scrollable filter chips — All, Playing, Completed, Dropped
   Widget _buildStatusFilters() {
     return Container(
       height: 52,
@@ -199,6 +206,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
     );
   }
 
+  // Individual review card — tappable to open game details
   Widget _buildReviewCard(Map<String, dynamic> review) {
     final status = review['status'] ?? 'Playing';
     final personalRating = (review['personalRating'] as num?)?.toDouble() ?? 0;
@@ -215,6 +223,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
           released: review['released'] ?? '',
         );
         await Navigator.push(context, MaterialPageRoute(builder: (_) => GameDetailsScreen(game: game)));
+        // Reload reviews in case the user edited one in game details
         _loadReviews();
       },
       child: Container(
@@ -227,7 +236,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Game image
+            // Game cover image
             ClipRRect(
               borderRadius: const BorderRadius.only(topLeft: Radius.circular(14), bottomLeft: Radius.circular(14)),
               child: review['imageUrl'] != null && review['imageUrl'].toString().isNotEmpty
@@ -240,7 +249,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                     )
                   : _imagePlaceholder(),
             ),
-            // Content
+            // Review content — game name, status badge, star rating, review text
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(14),
@@ -270,7 +279,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                           ),
                         ),
                         const Spacer(),
-                        // Stars
+                        // Star rating
                         Row(
                           children: List.generate(5, (i) => Icon(
                             personalRating > i ? Icons.star_rounded : Icons.star_outline_rounded,
@@ -280,6 +289,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                         ),
                       ],
                     ),
+                    // Review text preview if it exists
                     if (reviewText.isNotEmpty) ...[
                       const SizedBox(height: 8),
                       Text(
@@ -303,6 +313,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
     );
   }
 
+  // Fallback image for missing game covers
   Widget _imagePlaceholder() {
     return Container(
       width: 90,
@@ -312,6 +323,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
     );
   }
 
+  // Shown when the user hasn't written any reviews yet
   Widget _buildEmptyState() {
     return Center(
       child: Column(

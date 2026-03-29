@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'sign_up_screen.dart';
 
+// Login screen — split layout on wide screens, single column on mobile
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -10,6 +11,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  // App colour scheme
   static const _bg = Color(0xFF0D1117);
   static const _surface = Color(0xFF161B22);
   static const _accent = Color(0xFF00E5FF);
@@ -32,6 +34,7 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  // Sign in with Firebase Auth — AuthGate handles navigation automatically on success
   Future<void> login() async {
     setState(() { _isLoading = true; _errorMessage = null; _successMessage = null; });
     try {
@@ -46,6 +49,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  // Sends a password reset email to the entered address
   Future<void> _resetPassword() async {
     final email = _emailController.text.trim();
     if (email.isEmpty) {
@@ -76,7 +80,7 @@ class _LoginScreenState extends State<LoginScreen> {
         backgroundColor: _bg,
         body: Row(
           children: [
-            // Left decorative panel — only on wide screens
+            // Decorative left panel with branding — hidden on mobile
             if (isWide)
               Expanded(
                 child: Container(
@@ -89,6 +93,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   child: Stack(
                     children: [
+                      // Subtle grid pattern drawn with CustomPainter
                       CustomPaint(painter: _GridPainter(), size: Size.infinite),
                       Center(
                         child: Column(
@@ -122,7 +127,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
 
-            // Right form panel
+            // Login form — fixed 420px wide on desktop, full width on mobile
             SizedBox(
               width: isWide ? 420 : screenWidth,
               child: Container(
@@ -134,7 +139,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Mobile logo
+                        // Show logo above form on mobile since there is no left panel
                         if (!isWide) ...[
                           Center(
                             child: Column(
@@ -183,6 +188,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 10),
 
+                        // Forgot password link
                         Align(
                           alignment: Alignment.centerRight,
                           child: GestureDetector(
@@ -192,6 +198,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 20),
 
+                        // Error message shown on login failure
                         if (_errorMessage != null)
                           Container(
                             margin: const EdgeInsets.only(bottom: 16),
@@ -210,6 +217,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
 
+                        // Success message shown after password reset email is sent
                         if (_successMessage != null)
                           Container(
                             margin: const EdgeInsets.only(bottom: 16),
@@ -228,6 +236,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
 
+                        // Sign in button — shows spinner while loading
                         SizedBox(
                           width: double.infinity,
                           height: 50,
@@ -246,6 +255,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 24),
 
+                        // Link to sign up screen
                         Center(
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -271,6 +281,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  // Feature highlight pill shown on the left panel
   Widget _featurePill(IconData icon, String label) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -290,10 +301,12 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  // Small label above each input field
   Widget _fieldLabel(String label) {
     return Text(label, style: const TextStyle(color: _textSecondary, fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 0.8));
   }
 
+  // Reusable styled text field — supports password toggle and submit on enter
   Widget _inputField({
     required TextEditingController controller,
     required String hint,
@@ -315,6 +328,7 @@ class _LoginScreenState extends State<LoginScreen> {
         filled: true,
         fillColor: _surface,
         prefixIcon: Icon(icon, color: _textSecondary, size: 18),
+        // Eye icon to toggle password visibility
         suffixIcon: onToggleObscure != null
             ? IconButton(
                 icon: Icon(obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: _textSecondary, size: 18),
@@ -330,6 +344,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
+// Draws a subtle cyan grid pattern on the decorative left panel
 class _GridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {

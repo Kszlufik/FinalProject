@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../screens/game_details_screen.dart';
 import '../models/game.dart';
 
+// Shows a feed of recent activity from the user's friends
 class FeedScreen extends StatefulWidget {
   const FeedScreen({super.key});
 
@@ -12,6 +13,7 @@ class FeedScreen extends StatefulWidget {
 }
 
 class _FeedScreenState extends State<FeedScreen> {
+  // App colour scheme
   static const _bg = Color(0xFF0D1117);
   static const _surface = Color(0xFF161B22);
   static const _accent = Color(0xFF00E5FF);
@@ -38,8 +40,8 @@ class _FeedScreenState extends State<FeedScreen> {
     setState(() => _isLoading = true);
     try {
       final uid = _auth.currentUser!.uid;
-      
 
+      // Get the current user's friend list
       final friendsSnap = await _db
           .collection('users')
           .doc(uid)
@@ -47,24 +49,22 @@ class _FeedScreenState extends State<FeedScreen> {
           .get();
 
       final friendUids = friendsSnap.docs.map((d) => d['uid'] as String).toList();
-      
 
       if (friendUids.isEmpty) {
-       
         if (mounted) setState(() { _isLoading = false; _hasFriends = false; });
         return;
       }
 
       _hasFriends = true;
 
+      // Include own activity in the feed as well
       final allUids = [...friendUids, uid];
-     
 
       List<Map<String, dynamic>> allActivities = [];
 
+      // Firestore whereIn only supports 10 values at a time so we chunk the list
       for (int i = 0; i < allUids.length; i += 10) {
         final chunk = allUids.sublist(i, i + 10 > allUids.length ? allUids.length : i + 10);
-        
         try {
           final snap = await _db
               .collection('activity')
@@ -72,15 +72,13 @@ class _FeedScreenState extends State<FeedScreen> {
               .orderBy('timestamp', descending: true)
               .limit(50)
               .get();
-          
           allActivities.addAll(snap.docs.map((d) => d.data()));
         } catch (e) {
-          
+          // Skip chunk if index not ready yet
         }
       }
 
-      
-
+      // Sort combined results by timestamp since we merged multiple chunks
       allActivities.sort((a, b) {
         final aTime = a['timestamp'] as Timestamp?;
         final bTime = b['timestamp'] as Timestamp?;
@@ -90,16 +88,17 @@ class _FeedScreenState extends State<FeedScreen> {
 
       if (mounted) {
         setState(() {
+          // Only show the 30 most recent activities
           _activities = allActivities.take(30).toList();
           _isLoading = false;
         });
       }
     } catch (e) {
-      
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
+  // Converts a hex colour string stored in Firestore into a Flutter Color
   Color _getAvatarColor(String? hex) {
     if (hex == null) return _accent;
     try {
@@ -109,6 +108,7 @@ class _FeedScreenState extends State<FeedScreen> {
     }
   }
 
+  // Returns a human readable time string like "5m ago" or "2d ago"
   String _formatTime(Timestamp? timestamp) {
     if (timestamp == null) return '';
     final now = DateTime.now();
@@ -121,6 +121,7 @@ class _FeedScreenState extends State<FeedScreen> {
     return '${dt.day}/${dt.month}/${dt.year}';
   }
 
+  // Builds the activity description text shown on each card
   String _activityText(Map<String, dynamic> activity) {
     final type = activity['type'] ?? '';
     final gameName = activity['gameName'] ?? 'a game';
@@ -133,6 +134,7 @@ class _FeedScreenState extends State<FeedScreen> {
     return 'did something with $gameName';
   }
 
+  // Returns a colour based on the play status
   Color _statusColor(String? status) {
     switch (status) {
       case 'Completed': return _green;
@@ -171,6 +173,7 @@ class _FeedScreenState extends State<FeedScreen> {
     );
   }
 
+  // Builds a single activity card — tapping navigates to that game's details
   Widget _buildActivityCard(Map<String, dynamic> activity) {
     final username = activity['username'] ?? 'Unknown';
     final avatarColor = _getAvatarColor(activity['avatarColor']);
@@ -184,6 +187,7 @@ class _FeedScreenState extends State<FeedScreen> {
 
     return GestureDetector(
       onTap: () {
+        // Navigate to game details when card is tapped
         final game = Game(
           id: gameId,
           name: gameName,
@@ -203,6 +207,7 @@ class _FeedScreenState extends State<FeedScreen> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Game cover image on the left
             ClipRRect(
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(14),
@@ -221,6 +226,7 @@ class _FeedScreenState extends State<FeedScreen> {
                   children: [
                     Row(
                       children: [
+                        // User avatar circle with first letter of username
                         Container(
                           width: 24,
                           height: 24,
@@ -240,6 +246,7 @@ class _FeedScreenState extends State<FeedScreen> {
                           ),
                         ),
                         const SizedBox(width: 8),
+                        // Username bold + activity description
                         Expanded(
                           child: RichText(
                             text: TextSpan(
@@ -255,6 +262,7 @@ class _FeedScreenState extends State<FeedScreen> {
                     const SizedBox(height: 8),
                     Text(gameName, style: const TextStyle(color: _textPrimary, fontSize: 12, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
                     const SizedBox(height: 6),
+                    // Bottom row — status badge, star rating, heart icon, timestamp
                     Row(
                       children: [
                         if (status != null && type == 'reviewed')
@@ -293,11 +301,13 @@ class _FeedScreenState extends State<FeedScreen> {
     );
   }
 
+  // Fallback image when game cover fails to load
   Widget _imgPlaceholder() => Container(
     width: 80, height: 100, color: const Color(0xFF1C2333),
     child: const Icon(Icons.videogame_asset, color: _textSecondary, size: 24),
   );
 
+  // Shown when user has no friends added yet
   Widget _buildNoFriends() {
     return Center(
       child: Padding(
@@ -324,6 +334,7 @@ class _FeedScreenState extends State<FeedScreen> {
     );
   }
 
+  // Shown when friends exist but none have any activity yet
   Widget _buildEmpty() {
     return Center(
       child: Padding(

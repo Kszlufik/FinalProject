@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'friend_profile_screen.dart';
 
+// Manages the friends system — search, requests, and friends list
 class FriendsScreen extends StatefulWidget {
   const FriendsScreen({super.key});
 
@@ -11,6 +12,7 @@ class FriendsScreen extends StatefulWidget {
 }
 
 class _FriendsScreenState extends State<FriendsScreen> {
+  // App colour scheme
   static const _bg = Color(0xFF0D1117);
   static const _surface = Color(0xFF161B22);
   static const _surface2 = Color(0xFF1C2333);
@@ -24,6 +26,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
   final _db = FirebaseFirestore.instance;
   final _auth = FirebaseAuth.instance;
 
+  // Convenience getter for current user's UID
   String get _uid => _auth.currentUser!.uid;
 
   List<Map<String, dynamic>> _friends = [];
@@ -49,6 +52,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
     super.dispose();
   }
 
+  // Load friends, incoming requests and sent requests in parallel
   Future<void> _loadAll() async {
     await Future.wait([_loadFriends(), _loadRequests(), _loadSentRequests()]);
     if (mounted) setState(() => _isLoadingFriends = false);
@@ -69,6 +73,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
     _sentRequests = snap.docs.map((d) => d.data()).toList();
   }
 
+  // Search by username first, fall back to email if not found
   Future<void> _searchUser() async {
     final query = _searchController.text.trim().toLowerCase();
     if (query.isEmpty) return;
@@ -76,10 +81,10 @@ class _FriendsScreenState extends State<FriendsScreen> {
     setState(() { _isSearching = true; _searchResult = null; _searchError = null; });
 
     try {
-      // Search by username
+      // Check the usernames lookup collection first
       final usernameDoc = await _db.collection('usernames').doc(query).get();
       if (!usernameDoc.exists) {
-        // Try by email
+        // Fall back to email search
         final emailSnap = await _db.collection('users').where('email', isEqualTo: _searchController.text.trim()).get();
         if (emailSnap.docs.isEmpty) {
           setState(() { _searchError = 'No user found with that username or email.'; _isSearching = false; });
@@ -90,6 +95,8 @@ class _FriendsScreenState extends State<FriendsScreen> {
       }
 
       final uid = usernameDoc.data()!['uid'];
+
+      // Prevent searching for yourself
       if (uid == _uid) {
         setState(() { _searchError = 'That\'s you! Search for someone else.'; _isSearching = false; });
         return;
@@ -102,6 +109,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
     }
   }
 
+  // Send a friend request — writes to both users' subcollections
   Future<void> _sendRequest(Map<String, dynamic> user) async {
     setState(() => _isSendingRequest = true);
     final toUid = user['uid'];
@@ -109,14 +117,14 @@ class _FriendsScreenState extends State<FriendsScreen> {
     final me = myDoc.data()!;
 
     await Future.wait([
-      // Add to their incoming requests
+      // Write to recipient's incoming requests
       _db.collection('users').doc(toUid).collection('friendRequests').doc(_uid).set({
         'uid': _uid,
         'username': me['username'] ?? me['email'],
         'email': me['email'],
         'sentAt': FieldValue.serverTimestamp(),
       }),
-      // Add to my sent requests
+      // Write to my sent requests
       _db.collection('users').doc(_uid).collection('sentRequests').doc(toUid).set({
         'uid': toUid,
         'username': user['username'] ?? user['email'],
@@ -130,13 +138,14 @@ class _FriendsScreenState extends State<FriendsScreen> {
     _showSnack('Friend request sent!', _green);
   }
 
+  // Accept a request — creates mutual friendship and removes the request
   Future<void> _acceptRequest(Map<String, dynamic> requester) async {
     final fromUid = requester['uid'];
     final myDoc = await _db.collection('users').doc(_uid).get();
     final me = myDoc.data()!;
 
     await Future.wait([
-      // Add to each other's friends
+      // Add each other as friends
       _db.collection('users').doc(_uid).collection('friends').doc(fromUid).set({
         'uid': fromUid,
         'username': requester['username'] ?? requester['email'],
@@ -149,7 +158,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
         'email': me['email'],
         'addedAt': FieldValue.serverTimestamp(),
       }),
-      // Remove request from both sides
+      // Clean up the request documents on both sides
       _db.collection('users').doc(_uid).collection('friendRequests').doc(fromUid).delete(),
       _db.collection('users').doc(fromUid).collection('sentRequests').doc(_uid).delete(),
     ]);
@@ -159,6 +168,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
     _showSnack('You are now friends with ${requester['username'] ?? requester['email']}!', _green);
   }
 
+  // Decline a request — removes it from both sides without adding friendship
   Future<void> _declineRequest(String fromUid) async {
     await Future.wait([
       _db.collection('users').doc(_uid).collection('friendRequests').doc(fromUid).delete(),
@@ -168,6 +178,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
     setState(() {});
   }
 
+  // Remove an existing friend — deletes from both users' friends subcollections
   Future<void> _removeFriend(String friendUid) async {
     await Future.wait([
       _db.collection('users').doc(_uid).collection('friends').doc(friendUid).delete(),
@@ -187,9 +198,11 @@ class _FriendsScreenState extends State<FriendsScreen> {
     ));
   }
 
+  // Helper checks to determine button state in search results
   bool _alreadyFriend(String uid) => _friends.any((f) => f['uid'] == uid);
   bool _alreadySent(String uid) => _sentRequests.any((r) => r['uid'] == uid);
 
+  // Filter friends list by search query
   List<Map<String, dynamic>> get filteredFriends {
     if (_searchQuery.isEmpty) return _friends;
     return _friends.where((f) =>
@@ -244,6 +257,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildSearchSection(),
+                        // Only show incoming requests section if there are any
                         if (_incomingRequests.isNotEmpty) ...[
                           const SizedBox(height: 28),
                           _buildIncomingRequests(),
@@ -259,6 +273,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
     );
   }
 
+  // Search bar and result card
   Widget _buildSearchSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -304,7 +319,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
           ],
         ),
 
-        // Search error
+        // Error message if search fails
         if (_searchError != null) ...[
           const SizedBox(height: 12),
           Container(
@@ -324,7 +339,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
           ),
         ],
 
-        // Search result
+        // Show found user with add/requested/friends button
         if (_searchResult != null) ...[
           const SizedBox(height: 12),
           _buildSearchResultCard(_searchResult!),
@@ -333,6 +348,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
     );
   }
 
+  // Card showing found user with appropriate action button
   Widget _buildSearchResultCard(Map<String, dynamic> user) {
     final uid = user['uid'];
     final username = user['username'] ?? user['email'] ?? 'Unknown';
@@ -361,6 +377,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
               ],
             ),
           ),
+          // Show correct state — already friends, request sent, or add button
           if (isFriend)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -399,6 +416,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
     );
   }
 
+  // Incoming friend requests with accept and decline buttons
   Widget _buildIncomingRequests() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -407,6 +425,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
           children: [
             _sectionLabel('FRIEND REQUESTS'),
             const SizedBox(width: 8),
+            // Badge showing pending request count
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
               decoration: BoxDecoration(
@@ -423,6 +442,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
     );
   }
 
+  // Individual request card with accept/decline actions
   Widget _buildRequestCard(Map<String, dynamic> req) {
     final username = req['username'] ?? req['email'] ?? 'Unknown';
     final email = req['email'] ?? '';
@@ -448,14 +468,12 @@ class _FriendsScreenState extends State<FriendsScreen> {
               ],
             ),
           ),
-          // Decline
           IconButton(
             icon: const Icon(Icons.close, color: Colors.redAccent, size: 20),
             onPressed: () => _declineRequest(req['uid']),
             tooltip: 'Decline',
           ),
           const SizedBox(width: 4),
-          // Accept
           ElevatedButton(
             onPressed: () => _acceptRequest(req),
             style: ElevatedButton.styleFrom(
@@ -474,6 +492,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
     );
   }
 
+  // Friends list with filter input and remove option
   Widget _buildFriendsList() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -492,6 +511,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
             ),
           ],
         ),
+        // Show filter field only if there are friends to filter
         if (_friends.isNotEmpty) ...[
           const SizedBox(height: 12),
           TextField(
@@ -522,6 +542,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
     );
   }
 
+  // Individual friend card — tap to view profile, button to remove
   Widget _buildFriendCard(Map<String, dynamic> friend) {
     final username = friend['username'] ?? friend['email'] ?? 'Unknown';
     final email = friend['email'] ?? '';
@@ -554,7 +575,6 @@ class _FriendsScreenState extends State<FriendsScreen> {
                   ],
                 ),
               ),
-              // View profile
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
@@ -565,7 +585,6 @@ class _FriendsScreenState extends State<FriendsScreen> {
                 child: const Text('View', style: TextStyle(color: _accent, fontSize: 12, fontWeight: FontWeight.bold)),
               ),
               const SizedBox(width: 8),
-              // Remove
               IconButton(
                 icon: Icon(Icons.person_remove_outlined, color: _textSecondary.withOpacity(0.5), size: 18),
                 onPressed: () => _confirmRemove(friend),
@@ -578,6 +597,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
     );
   }
 
+  // Confirmation dialog before removing a friend
   void _confirmRemove(Map<String, dynamic> friend) {
     final username = friend['username'] ?? friend['email'];
     showDialog(
@@ -599,6 +619,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
     );
   }
 
+  // Reusable avatar circle widget
   Widget _avatar(String name, {double size = 40, Color color = _accent}) {
     return Container(
       width: size,
@@ -620,10 +641,12 @@ class _FriendsScreenState extends State<FriendsScreen> {
     );
   }
 
+  // Small uppercase section label
   Widget _sectionLabel(String label) {
     return Text(label, style: const TextStyle(color: _textSecondary, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.5));
   }
 
+  // Empty state when user has no friends yet
   Widget _buildEmptyFriends() {
     return Center(
       child: Padding(

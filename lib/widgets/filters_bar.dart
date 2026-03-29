@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+// Sort and genre filter bar — scrolls horizontally on narrow screens
 class FiltersBar extends StatelessWidget {
   final String sortBy;
   final String genre;
@@ -18,12 +19,13 @@ class FiltersBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-     const _accent = Color(0xFF00E5FF);
-     const _surface = Color(0xFF161B22);
-     const _textSecondary = Color(0xFF8B949E);
-     const _border = Color(0xFF30363D);
-     const _bg = Color(0xFF0D1117);
+    const _accent = Color(0xFF00E5FF);
+    const _surface = Color(0xFF161B22);
+    const _textSecondary = Color(0xFF8B949E);
+    const _border = Color(0xFF30363D);
+    const _bg = Color(0xFF0D1117);
 
+    // Sort options passed to RAWG as the ordering parameter
     final sortOptions = <String, String>{
       '-rating': 'Top Rated',
       'rating': 'Lowest Rated',
@@ -31,6 +33,7 @@ class FiltersBar extends StatelessWidget {
       'released': 'Oldest First',
     };
 
+    // Genre options use RAWG genre IDs as keys
     final genreOptions = <String, String>{
       '': 'All Genres',
       '4': 'Action',
@@ -49,12 +52,13 @@ class FiltersBar extends StatelessWidget {
       '13': 'Educational',
     };
 
+    // Wrapping in SingleChildScrollView prevents overflow on narrow screens
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
       child: Row(
         children: [
-          // Sort dropdown
+          // Sort order dropdown
           _buildDropdown<String>(
             value: sortOptions.containsKey(sortBy) ? sortBy : '-rating',
             items: sortOptions,
@@ -63,7 +67,7 @@ class FiltersBar extends StatelessWidget {
           ),
           const SizedBox(width: 10),
 
-          // Genre dropdown
+          // Genre filter dropdown
           _buildDropdown<String>(
             value: genreOptions.containsKey(genre) ? genre : '',
             items: genreOptions,
@@ -72,7 +76,7 @@ class FiltersBar extends StatelessWidget {
           ),
           const SizedBox(width: 10),
 
-          // Clear button
+          // Clear all filters button
           GestureDetector(
             onTap: onClearFilters,
             child: Container(
@@ -97,18 +101,17 @@ class FiltersBar extends StatelessWidget {
     );
   }
 
+  // Reusable styled dropdown used for both sort and genre
   Widget _buildDropdown<T>({
     required T value,
     required Map<T, String> items,
     required Function(T?) onChanged,
     required IconData icon,
   }) {
-    const _accent = Color(0xFF00E5FF);
     const _surface = Color(0xFF161B22);
     const _textPrimary = Color(0xFFE6EDF3);
     const _textSecondary = Color(0xFF8B949E);
     const _border = Color(0xFF30363D);
-    const _bg = Color(0xFF0D1117);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),

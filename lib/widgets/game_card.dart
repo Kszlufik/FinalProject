@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/user_service.dart';
 import '../widgets/review_dialog.dart';
 
+// Individual game card shown in the grid — tap to open details, long press to review
 class GameCard extends StatelessWidget {
   final int gameId;
   final String name;
@@ -30,6 +31,7 @@ class GameCard extends StatelessWidget {
     required this.onReviewSaved,
   });
 
+  // Opens the review dialog — loads any existing review first so it can be edited
   Future<void> _openReviewDialog(BuildContext context) async {
     final userService = UserService();
     final existingReview = await userService.loadReview(gameId);
@@ -46,12 +48,14 @@ class GameCard extends StatelessWidget {
 
     if (result == null) return;
 
+    // User tapped delete
     if (result == 'delete') {
       await userService.deleteReview(gameId);
       onReviewSaved();
       return;
     }
 
+    // User saved a new or edited review
     await userService.saveReview(
       gameId: gameId,
       gameName: gameName,
@@ -68,6 +72,7 @@ class GameCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
+      // Long press triggers the review dialog
       onLongPress: () => _openReviewDialog(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -75,6 +80,7 @@ class GameCard extends StatelessWidget {
           Expanded(
             child: Stack(
               children: [
+                // Game cover image
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: SizedBox.expand(
@@ -86,6 +92,7 @@ class GameCard extends StatelessWidget {
                     ),
                   ),
                 ),
+                // Heart button in top right corner
                 Positioned(
                   top: 8,
                   right: 8,
@@ -97,6 +104,7 @@ class GameCard extends StatelessWidget {
                     onPressed: onFavoriteToggle,
                   ),
                 ),
+                // Review badge shown in top left when game has been reviewed
                 if (hasReview)
                   Positioned(
                     top: 8,
@@ -135,6 +143,7 @@ class GameCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text('Released: $released', style: const TextStyle(fontSize: 12)),
           const SizedBox(height: 4),
+          // Hint to remind users they can long press to review
           Text(
             'Hold to review',
             style: TextStyle(fontSize: 10, color: Colors.grey.shade400),

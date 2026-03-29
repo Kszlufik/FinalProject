@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+// Dialog for writing or editing a game review — status, star rating and notes
 class ReviewDialog extends StatefulWidget {
   final String gameName;
   final Map<String, dynamic>? existingReview;
@@ -24,7 +25,7 @@ class _ReviewDialogState extends State<ReviewDialog> {
   @override
   void initState() {
     super.initState();
-    // If an existing review exists, pre-fill the fields
+    // Pre-fill fields if editing an existing review
     if (widget.existingReview != null) {
       _reviewController.text = widget.existingReview!['reviewText'] ?? '';
       _personalRating = (widget.existingReview!['personalRating'] as num?)?.toDouble() ?? 0;
@@ -41,6 +42,7 @@ class _ReviewDialogState extends State<ReviewDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
+      // Title changes depending on whether this is a new review or an edit
       title: Text(
         widget.existingReview != null ? 'Edit Review' : 'Write a Review',
         style: const TextStyle(fontWeight: FontWeight.bold),
@@ -50,20 +52,15 @@ class _ReviewDialogState extends State<ReviewDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Game name shown as subtitle
             Text(
               widget.gameName,
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontSize: 13,
-              ),
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
             ),
             const SizedBox(height: 20),
 
-            // Status selector
-            const Text(
-              'Status',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+            // Play status chip selector
+            const Text('Status', style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Row(
               children: _statusOptions.map((status) {
@@ -81,11 +78,8 @@ class _ReviewDialogState extends State<ReviewDialog> {
 
             const SizedBox(height: 20),
 
-            // Star rating
-            const Text(
-              'Your Rating',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+            // Star rating — tapping a star sets the rating to that value
+            const Text('Your Rating', style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Row(
               children: List.generate(5, (index) {
@@ -94,9 +88,7 @@ class _ReviewDialogState extends State<ReviewDialog> {
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                   icon: Icon(
-                    _personalRating >= starValue
-                        ? Icons.star
-                        : Icons.star_border,
+                    _personalRating >= starValue ? Icons.star : Icons.star_border,
                     color: Colors.amber,
                     size: 32,
                   ),
@@ -107,11 +99,8 @@ class _ReviewDialogState extends State<ReviewDialog> {
 
             const SizedBox(height: 20),
 
-            // Review text
-            const Text(
-              'Notes',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+            // Optional text notes field
+            const Text('Notes', style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             TextField(
               controller: _reviewController,
@@ -130,19 +119,17 @@ class _ReviewDialogState extends State<ReviewDialog> {
         ),
       ),
       actions: [
-        // Delete button if editing existing review
+        // Delete button only shown when editing an existing review
         if (widget.existingReview != null)
           TextButton(
             onPressed: () => Navigator.pop(context, 'delete'),
-            child: const Text(
-              'Delete Review',
-              style: TextStyle(color: Colors.red),
-            ),
+            child: const Text('Delete Review', style: TextStyle(color: Colors.red)),
           ),
         TextButton(
           onPressed: () => Navigator.pop(context, null),
           child: const Text('Cancel'),
         ),
+        // Save returns the review data as a map back to the caller
         ElevatedButton(
           onPressed: () {
             Navigator.pop(context, {
