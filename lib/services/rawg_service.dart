@@ -18,6 +18,7 @@ class RawgService {
       'page_size': '40',
       'page': page.toString(),
       'ordering': sortBy,
+      'esrb_rating': 'everyone,everyone-10-plus,teen,mature',
       if (genre.isNotEmpty) 'genres': genre,
       if (search.isNotEmpty) 'search': search,
       if (platform.isNotEmpty) 'platforms': platform,
